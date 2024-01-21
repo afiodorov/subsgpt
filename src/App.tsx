@@ -193,6 +193,7 @@ function App() {
           initPrompt={initPrompt}
           setBatchShown={setBatchShownAndStore}
           setBatchInput={setBatchInputAndStore}
+          setErr={setErrAndStore}
         />
       </div>
       <div className="footer"></div>

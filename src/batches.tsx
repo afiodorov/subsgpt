@@ -10,6 +10,7 @@ export type BatchComponentProps = {
   initPrompt: string;
   setBatchShown: (_: number | string) => void;
   setBatchInput: (_: string) => void;
+  setErr: (_: string) => void;
 };
 
 const BatchItem: React.FC<{
@@ -19,7 +20,16 @@ const BatchItem: React.FC<{
   initPrompt: string;
   setBatchShown: (_: number | string) => void;
   setBatchInput: (_: string) => void;
-}> = ({ index, context, batch, initPrompt, setBatchShown, setBatchInput }) => {
+  setErr: (_: string) => void;
+}> = ({
+  index,
+  context,
+  batch,
+  initPrompt,
+  setBatchShown,
+  setBatchInput,
+  setErr,
+}) => {
   const [isOK, setIsOK] = useState<boolean | null>(null);
 
   const showBatch = (i: number) => {
@@ -32,6 +42,7 @@ const BatchItem: React.FC<{
       try {
         const response = await translateBatch(initPrompt, context, batch);
       } catch (error) {
+        setErr((error as Error).message);
         setIsOK(false);
       }
     };
@@ -67,6 +78,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
   initPrompt,
   setBatchShown,
   setBatchInput,
+  setErr,
 }) => {
   return (
     <>
@@ -86,6 +98,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
             initPrompt={initPrompt}
             setBatchShown={setBatchShown}
             setBatchInput={setBatchInput}
+            setErr={setErr}
           />
         );
       })}

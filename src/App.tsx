@@ -134,6 +134,7 @@ function App() {
             onClick={async () => {
               setOriginalAndStore("");
             }}
+            disabled={isTranslating}
           >
             Clear
           </button>
@@ -148,7 +149,10 @@ function App() {
           </button>
         )}
         {batchShown === "" && (
-          <button onClick={async () => uploadAndStoreFile(setOriginal)}>
+          <button
+            onClick={async () => uploadAndStoreFile(setOriginal)}
+            disabled={isTranslating}
+          >
             Upload .srt
           </button>
         )}

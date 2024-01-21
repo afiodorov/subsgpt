@@ -6,6 +6,7 @@ import { translate } from "./prompts";
 import { translateHandler } from "./translate";
 import { useLocalStorageSetter } from "./storage";
 import { BatchComponent } from "./batches";
+import { Phrase } from "./srtutils";
 
 function App() {
   const [original, setOriginal] = useState<string>(
@@ -19,6 +20,7 @@ function App() {
     localStorage.getItem("initPrompt") || translate
   );
   const [numBatches, setNumBatches] = useState<number>(0);
+  const [phrases, setPhrases] = useState<Phrase[]>([]);
 
   const setIsTranslatingAndStore = useLocalStorageSetter(
     setIsTranslating,
@@ -120,7 +122,8 @@ function App() {
               original,
               setErr,
               setNumBatchesAndStore,
-              setIsTranslatingAndStore
+              setIsTranslatingAndStore,
+              setPhrases
             )
           }
         >
@@ -128,7 +131,7 @@ function App() {
         </button>
       </div>
       <div className="batch" id="batch">
-        <BatchComponent numBatches={numBatches} />
+        <BatchComponent numBatches={numBatches} phrases={phrases} />
       </div>
       <div className="footer"></div>
       <div className="space"></div>

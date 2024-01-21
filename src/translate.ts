@@ -1,12 +1,13 @@
-import { parse } from "./srtutils";
+import { parse, Phrase } from "./srtutils";
 
-const batchSize = 20;
+export const batchSize = 20;
 
 export function translateHandler(
   text: string,
   setErr: (err: string) => void,
   setNumBatches: (b: number) => void,
-  setIsTranslating: (_: boolean) => void
+  setIsTranslating: (_: boolean) => void,
+  setPhrases: (_: Phrase[]) => void
 ) {
   setIsTranslating(true);
 
@@ -18,4 +19,5 @@ export function translateHandler(
   setErr("");
   const numBatches = Math.ceil(subs.value.length / batchSize);
   setNumBatches(numBatches);
+  setPhrases(subs.value);
 }

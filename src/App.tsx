@@ -1,24 +1,137 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { useState, useEffect } from "react";
+import "./App.css";
+import { Editor } from "./editor";
+import { uploadAndStoreFile } from "./fileutils";
+import { translate } from "./prompts";
+import { translateHandler } from "./translate";
+import { useLocalStorageSetter } from "./storage";
+import { BatchComponent } from "./batches";
 
 function App() {
+  const [original, setOriginal] = useState<string>(
+    localStorage.getItem("uploadedFile") || ""
+  );
+  const [translated, setTranslated] = useState<string>("");
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
+  const [err, setErr] = useState<string>("");
+  const [showResult, setShowResult] = useState<boolean>(false);
+  const [initPrompt, setInitPrompt] = useState<string>(
+    localStorage.getItem("initPrompt") || translate
+  );
+  const [numBatches, setNumBatches] = useState<number>(0);
+
+  const setIsTranslatingAndStore = useLocalStorageSetter(
+    setIsTranslating,
+    "isTranslating"
+  );
+  const setOriginalAndStore = useLocalStorageSetter(
+    setOriginal,
+    "uploadedFile",
+    false
+  );
+  const setNumBatchesAndStore = useLocalStorageSetter(
+    setNumBatches,
+    "numBatches"
+  );
+  const setInitPromptAndStore = useLocalStorageSetter(
+    setInitPrompt,
+    "initPrompt",
+    false
+  );
+
+  useEffect(() => {
+    const isTranslating = JSON.parse(
+      localStorage.getItem("isTranslating") || "false"
+    );
+    if (isTranslating) {
+      setIsTranslating(true);
+    }
+
+    const numBatches = JSON.parse(localStorage.getItem("numBatches") || "0");
+    if (typeof numBatches === "number" && !isNaN(numBatches)) {
+      setNumBatches(numBatches);
+    }
+  });
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+      <div className="header">
+        <div>
+          <img src="./logo.webp" className="logo"></img>
+        </div>
+        <div className="title">Translate Subtitles</div>
+      </div>
+      <div className="original">
+        <Editor name="original" text={original} setText={setOriginalAndStore} />
+      </div>
+      <div className="translated">
+        {showResult ? (
+          <Editor name="translated" text={translated} setText={setTranslated} />
+        ) : (
+          <>
+            <div className="heading">Prompt</div>
+            {isTranslating ? (
+              <span>{initPrompt}</span>
+            ) : (
+              <Editor
+                name="prompt"
+                text={initPrompt}
+                setText={setInitPromptAndStore}
+                height="150px"
+              />
+            )}
+            {err !== "" && (
+              <>
+                <span className="heading">Errors</span>
+                <div className="errors">{err}</div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+      <div className="buttons_original">
+        <button
+          onClick={async () => {
+            setOriginalAndStore("");
+          }}
         >
-          Learn React
-        </a>
-      </header>
+          Clear
+        </button>
+        <button onClick={async () => uploadAndStoreFile(setOriginal)}>
+          Upload .srt
+        </button>
+      </div>
+      <div className="buttons_translated">
+        <button
+          onClick={async () => {
+            setErr("");
+            setInitPromptAndStore(translate);
+            setNumBatchesAndStore(0);
+            setIsTranslatingAndStore(false);
+          }}
+        >
+          Reset
+        </button>
+        <button disabled={true}>Download</button>
+        <button
+          disabled={isTranslating}
+          onClick={async () =>
+            translateHandler(
+              original,
+              setErr,
+              setNumBatchesAndStore,
+              setIsTranslatingAndStore
+            )
+          }
+        >
+          Translate
+        </button>
+      </div>
+      <div className="batch" id="batch">
+        <BatchComponent numBatches={numBatches} />
+      </div>
+      <div className="footer"></div>
+      <div className="space"></div>
     </div>
   );
 }

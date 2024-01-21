@@ -14,13 +14,19 @@ function App() {
   );
   const [translated, setTranslated] = useState<string>("");
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
-  const [err, setErr] = useState<string>("");
+  const [err, setErr] = useState<string>(localStorage.getItem("err") || "");
   const [showResult, setShowResult] = useState<boolean>(false);
   const [initPrompt, setInitPrompt] = useState<string>(
     localStorage.getItem("initPrompt") || translate
   );
   const [numBatches, setNumBatches] = useState<number>(0);
-  const [phrases, setPhrases] = useState<Phrase[]>([]);
+  const [phrases, setPhrases] = useState<Phrase[]>(
+    JSON.parse(localStorage.getItem("phrases") || "[]")
+  );
+  const [batchShown, setBatchShown] = useState<number | string>("");
+  const [batchInput, setBatchInput] = useState<string>(
+    localStorage.getItem("batchInput") || ""
+  );
 
   const setIsTranslatingAndStore = useLocalStorageSetter(
     setIsTranslating,
@@ -40,6 +46,17 @@ function App() {
     "initPrompt",
     false
   );
+  const setBatchShownAndStore = useLocalStorageSetter(
+    setBatchShown,
+    "batchShown"
+  );
+  const setBatchInputAndStore = useLocalStorageSetter(
+    setBatchInput,
+    "batchInput",
+    false
+  );
+  const setPhrasesAndStore = useLocalStorageSetter(setPhrases, "phrases");
+  const setErrAndStore = useLocalStorageSetter(setErr, "err", false);
 
   useEffect(() => {
     const isTranslating = JSON.parse(
@@ -53,18 +70,38 @@ function App() {
     if (typeof numBatches === "number" && !isNaN(numBatches)) {
       setNumBatches(numBatches);
     }
-  });
+
+    const batchShown = JSON.parse(localStorage.getItem("batchShown") || '""');
+    if (typeof batchShown === "number" && !isNaN(batchShown)) {
+      setBatchShown(batchShown);
+    }
+  }, [setIsTranslating]);
 
   return (
     <div className="App">
       <div className="header">
         <div>
-          <img src="./logo.webp" className="logo"></img>
+          <img src="./logo.webp" className="logo" alt="logo"></img>
         </div>
         <div className="title">Translate Subtitles</div>
       </div>
       <div className="original">
-        <Editor name="original" text={original} setText={setOriginalAndStore} />
+        {batchShown === "" && (
+          <Editor
+            name="original"
+            text={original}
+            setText={setOriginalAndStore}
+            readOnly={isTranslating}
+          />
+        )}
+        {batchShown !== "" && (
+          <Editor
+            name="batch"
+            text={batchInput}
+            setText={setBatchInputAndStore}
+            readOnly={true}
+          />
+        )}
       </div>
       <div className="translated">
         {showResult ? (
@@ -92,24 +129,39 @@ function App() {
         )}
       </div>
       <div className="buttons_original">
-        <button
-          onClick={async () => {
-            setOriginalAndStore("");
-          }}
-        >
-          Clear
-        </button>
-        <button onClick={async () => uploadAndStoreFile(setOriginal)}>
-          Upload .srt
-        </button>
+        {batchShown === "" && (
+          <button
+            onClick={async () => {
+              setOriginalAndStore("");
+            }}
+          >
+            Clear
+          </button>
+        )}
+        {batchShown !== "" && (
+          <button
+            onClick={async () => {
+              setBatchShownAndStore("");
+            }}
+          >
+            Close
+          </button>
+        )}
+        {batchShown === "" && (
+          <button onClick={async () => uploadAndStoreFile(setOriginal)}>
+            Upload .srt
+          </button>
+        )}
       </div>
       <div className="buttons_translated">
         <button
           onClick={async () => {
-            setErr("");
+            setErrAndStore("");
             setInitPromptAndStore(translate);
             setNumBatchesAndStore(0);
             setIsTranslatingAndStore(false);
+            setBatchShownAndStore("");
+            setPhrasesAndStore([]);
           }}
         >
           Reset
@@ -120,10 +172,10 @@ function App() {
           onClick={async () =>
             translateHandler(
               original,
-              setErr,
+              setErrAndStore,
               setNumBatchesAndStore,
               setIsTranslatingAndStore,
-              setPhrases
+              setPhrasesAndStore
             )
           }
         >
@@ -135,6 +187,8 @@ function App() {
           numBatches={numBatches}
           phrases={phrases}
           initPrompt={initPrompt}
+          setBatchShown={setBatchShownAndStore}
+          setBatchInput={setBatchInputAndStore}
         />
       </div>
       <div className="footer"></div>

@@ -9,6 +9,7 @@ export interface EditorProps {
   setText: (text: string) => void;
   height?: string;
   name: string;
+  readOnly?: boolean;
 }
 
 export const Editor: React.FC<EditorProps> = ({
@@ -16,6 +17,7 @@ export const Editor: React.FC<EditorProps> = ({
   setText,
   name,
   height = "550px",
+  readOnly = false,
 }) => {
   const onChange = (newValue: string) => {
     setText(newValue);
@@ -39,6 +41,7 @@ export const Editor: React.FC<EditorProps> = ({
       }}
       width={"100%"}
       height={height}
+      readOnly={readOnly}
     />
   );
 };

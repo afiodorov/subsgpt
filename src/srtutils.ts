@@ -12,6 +12,15 @@ export class Phrase {
   }
 }
 
+export function convertToPhraseObject(phrases: Phrase[]): {
+  [key: number]: string;
+} {
+  return phrases.reduce((obj, phrase) => {
+    obj[phrase.number] = phrase.text;
+    return obj;
+  }, {} as { [key: number]: string });
+}
+
 export function parse(text: string): Either<string, Phrase[]> {
   try {
     const lines = text.trim().split("\n\n");

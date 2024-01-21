@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import { translateBatch } from "./ai";
 import { Phrase } from "./srtutils";
 import { batchSize } from "./translate";
+import { convertToPhraseObject } from "./srtutils";
 
 export type BatchComponentProps = {
   numBatches: number;
   phrases: Phrase[];
   initPrompt: string;
+  setBatchShown: (_: number | string) => void;
+  setBatchInput: (_: string) => void;
 };
 
 const BatchItem: React.FC<{
@@ -14,10 +17,15 @@ const BatchItem: React.FC<{
   context: Phrase[];
   batch: Phrase[];
   initPrompt: string;
-}> = ({ index, context, batch, initPrompt }) => {
+  setBatchShown: (_: number | string) => void;
+  setBatchInput: (_: string) => void;
+}> = ({ index, context, batch, initPrompt, setBatchShown, setBatchInput }) => {
   const [isOK, setIsOK] = useState<boolean | null>(null);
 
-  const showBatch = () => {};
+  const showBatch = (i: number) => {
+    setBatchShown(i);
+    setBatchInput(JSON.stringify(convertToPhraseObject(batch), null, 4));
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,13 +37,25 @@ const BatchItem: React.FC<{
     };
 
     fetchData();
-  }, [index]);
+  }, [index, context, initPrompt, batch]);
 
   return (
-    <div className="batch-item" id={`batch_${index}`} onClick={showBatch}>
-      {isOK === null && <img src="./loading.gif" className="loading" />}
-      {isOK === true && <img src="./check-mark.png" className="loading" />}
-      {isOK === false && <img src="./red-cross.png" className="loading" />}
+    <div
+      className="batch-item"
+      id={`batch_${index}`}
+      onClick={async () => {
+        showBatch(index);
+      }}
+    >
+      {isOK === null && (
+        <img src="./loading.gif" className="loading" alt="loading" />
+      )}
+      {isOK === true && (
+        <img src="./check-mark.png" className="loading" alt="ok" />
+      )}
+      {isOK === false && (
+        <img src="./red-cross.png" className="loading" alt="failed" />
+      )}
       {`Batch ${index}`}
     </div>
   );
@@ -45,6 +65,8 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
   numBatches,
   phrases,
   initPrompt,
+  setBatchShown,
+  setBatchInput,
 }) => {
   return (
     <>
@@ -62,6 +84,8 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
             batch={currentBatch}
             context={previousBatch}
             initPrompt={initPrompt}
+            setBatchShown={setBatchShown}
+            setBatchInput={setBatchInput}
           />
         );
       })}

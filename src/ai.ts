@@ -1,6 +1,7 @@
 import { Phrase } from "./srtutils";
 
 export const translateBatch = async function (
+  initPrompt: string,
   context: Phrase[],
   batch: Phrase[]
 ): Promise<string> {

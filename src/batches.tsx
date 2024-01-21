@@ -6,13 +6,15 @@ import { batchSize } from "./translate";
 export type BatchComponentProps = {
   numBatches: number;
   phrases: Phrase[];
+  initPrompt: string;
 };
 
 const BatchItem: React.FC<{
   index: number;
   context: Phrase[];
   batch: Phrase[];
-}> = ({ index, context, batch }) => {
+  initPrompt: string;
+}> = ({ index, context, batch, initPrompt }) => {
   const [isOK, setIsOK] = useState<boolean | null>(null);
 
   const showBatch = () => {};
@@ -20,7 +22,7 @@ const BatchItem: React.FC<{
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await translateBatch(context, batch);
+        const response = await translateBatch(initPrompt, context, batch);
       } catch (error) {
         setIsOK(false);
       }
@@ -42,6 +44,7 @@ const BatchItem: React.FC<{
 export const BatchComponent: React.FC<BatchComponentProps> = ({
   numBatches,
   phrases,
+  initPrompt,
 }) => {
   return (
     <>
@@ -58,6 +61,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
             index={i}
             batch={currentBatch}
             context={previousBatch}
+            initPrompt={initPrompt}
           />
         );
       })}

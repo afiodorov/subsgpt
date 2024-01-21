@@ -131,7 +131,11 @@ function App() {
         </button>
       </div>
       <div className="batch" id="batch">
-        <BatchComponent numBatches={numBatches} phrases={phrases} />
+        <BatchComponent
+          numBatches={numBatches}
+          phrases={phrases}
+          initPrompt={initPrompt}
+        />
       </div>
       <div className="footer"></div>
       <div className="space"></div>

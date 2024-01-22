@@ -30,6 +30,9 @@ function App() {
   const [batchErr, setBatchErr] = useState<string>(
     localStorage.getItem("batchErr") || ""
   );
+  const [batchOutput, setBatchOutput] = useState<string>(
+    localStorage.getItem("batchOutput") || ""
+  );
 
   const setIsTranslatingAndStore = useLocalStorageSetter(
     setIsTranslating,
@@ -63,6 +66,11 @@ function App() {
   const setBatchErrAndStore = useLocalStorageSetter(
     setBatchErr,
     "batchErr",
+    false
+  );
+  const setBatchOutputAndStore = useLocalStorageSetter(
+    setBatchOutput,
+    "batchOutput",
     false
   );
 
@@ -138,6 +146,12 @@ function App() {
         )}
         {batchShown !== "" && (
           <>
+            <Editor
+              name="batchOutput"
+              text={batchOutput}
+              setText={setBatchOutput}
+              height="300px"
+            />
             {batchErr !== "" && (
               <>
                 <span className="heading">Errors</span>
@@ -215,6 +229,7 @@ function App() {
           setBatchShown={setBatchShownAndStore}
           setBatchInput={setBatchInputAndStore}
           setErr={setBatchErrAndStore}
+          setOutput={setBatchOutputAndStore}
         />
       </div>
       <div className="footer"></div>

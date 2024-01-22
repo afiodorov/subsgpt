@@ -1,13 +1,20 @@
 import { Phrase } from "./srtutils";
+import { Either, Right, Left } from "./either";
 
 export const translateBatch = async function (
   initPrompt: string,
   context: Phrase[],
   batch: Phrase[]
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      reject(new Error("An error occurred"));
-    }, 1000);
-  });
+): Promise<Either<Error, string>> {
+  return new Right('{"10": "hi"}');
+};
+
+export const fixCompletion = async function (
+  initPrompt: string,
+  context: Phrase[],
+  batch: Phrase[],
+  wrongResponse: string
+): Promise<Either<Error, string>> {
+  const randomNumber = Math.floor(Math.random() * 101);
+  return new Right(`{"${randomNumber}": "hi"}`);
 };

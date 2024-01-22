@@ -27,6 +27,9 @@ function App() {
   const [batchInput, setBatchInput] = useState<string>(
     localStorage.getItem("batchInput") || ""
   );
+  const [batchErr, setBatchErr] = useState<string>(
+    localStorage.getItem("batchErr") || ""
+  );
 
   const setIsTranslatingAndStore = useLocalStorageSetter(
     setIsTranslating,
@@ -57,6 +60,11 @@ function App() {
   );
   const setPhrasesAndStore = useLocalStorageSetter(setPhrases, "phrases");
   const setErrAndStore = useLocalStorageSetter(setErr, "err", false);
+  const setBatchErrAndStore = useLocalStorageSetter(
+    setBatchErr,
+    "batchErr",
+    false
+  );
 
   useEffect(() => {
     const isTranslating = JSON.parse(
@@ -104,9 +112,10 @@ function App() {
         )}
       </div>
       <div className="translated">
-        {showResult ? (
+        {showResult && (
           <Editor name="translated" text={translated} setText={setTranslated} />
-        ) : (
+        )}
+        {batchShown === "" && (
           <>
             <div className="heading">Prompt</div>
             {isTranslating ? (
@@ -123,6 +132,16 @@ function App() {
               <>
                 <span className="heading">Errors</span>
                 <div className="errors">{err}</div>
+              </>
+            )}
+          </>
+        )}
+        {batchShown !== "" && (
+          <>
+            {batchErr !== "" && (
+              <>
+                <span className="heading">Errors</span>
+                <div className="errors">{batchErr}</div>
               </>
             )}
           </>
@@ -161,6 +180,7 @@ function App() {
         <button
           onClick={async () => {
             setErrAndStore("");
+            setBatchErrAndStore("");
             setInitPromptAndStore(translate);
             setNumBatchesAndStore(0);
             setIsTranslatingAndStore(false);
@@ -191,9 +211,10 @@ function App() {
           numBatches={numBatches}
           phrases={phrases}
           initPrompt={initPrompt}
+          batchShown={batchShown}
           setBatchShown={setBatchShownAndStore}
           setBatchInput={setBatchInputAndStore}
-          setErr={setErrAndStore}
+          setErr={setBatchErrAndStore}
         />
       </div>
       <div className="footer"></div>

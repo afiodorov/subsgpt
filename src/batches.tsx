@@ -8,6 +8,7 @@ export type BatchComponentProps = {
   numBatches: number;
   phrases: Phrase[];
   initPrompt: string;
+  batchShown: number | string;
   setBatchShown: (_: number | string) => void;
   setBatchInput: (_: string) => void;
   setErr: (_: string) => void;
@@ -18,6 +19,7 @@ const BatchItem: React.FC<{
   context: Phrase[];
   batch: Phrase[];
   initPrompt: string;
+  batchShown: number | string;
   setBatchShown: (_: number | string) => void;
   setBatchInput: (_: string) => void;
   setErr: (_: string) => void;
@@ -26,29 +28,39 @@ const BatchItem: React.FC<{
   context,
   batch,
   initPrompt,
+  batchShown,
   setBatchShown,
   setBatchInput,
   setErr,
 }) => {
   const [isOK, setIsOK] = useState<boolean | null>(null);
+  const [batchError, setBatchErr] = useState<Error | null>(null);
 
   const showBatch = (i: number) => {
     setBatchShown(i);
     setBatchInput(JSON.stringify(convertToPhraseObject(batch), null, 4));
+    if (batchError) {
+      setErr((batchError as Error).message);
+    }
   };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await translateBatch(initPrompt, context, batch);
-      } catch (error) {
-        setErr((error as Error).message);
+      } catch (err) {
+        if (err instanceof Error) {
+          setBatchErr(err);
+          if (batchShown === index) {
+            setErr(err.message);
+          }
+        }
         setIsOK(false);
       }
     };
 
     fetchData();
-  }, [index, context, initPrompt, batch]);
+  }, [index, context, initPrompt, batch, batchShown, setErr]);
 
   return (
     <div
@@ -76,6 +88,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
   numBatches,
   phrases,
   initPrompt,
+  batchShown,
   setBatchShown,
   setBatchInput,
   setErr,
@@ -96,6 +109,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
             batch={currentBatch}
             context={previousBatch}
             initPrompt={initPrompt}
+            batchShown={batchShown}
             setBatchShown={setBatchShown}
             setBatchInput={setBatchInput}
             setErr={setErr}

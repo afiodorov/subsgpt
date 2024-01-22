@@ -93,6 +93,27 @@ function App() {
     }
   }, [setIsTranslating]);
 
+  const [batchDataResults, setBatchDataResults] = useState<
+    Array<[string, string] | undefined>
+  >(
+    (
+      JSON.parse(
+        localStorage.getItem("batchDataResults") ||
+          JSON.stringify(new Array(numBatches))
+      ) as Array<[string, string] | null>
+    ).map((v: [string, string] | null) => {
+      if (v === null) {
+        return undefined;
+      }
+      return v;
+    })
+  );
+
+  const setBatchDataResultsAndStore = useLocalStorageSetter(
+    setBatchDataResults,
+    "batchDataResults"
+  );
+
   return (
     <div className="App">
       <div className="header">
@@ -133,11 +154,12 @@ function App() {
                 name="prompt"
                 text={initPrompt}
                 setText={setInitPromptAndStore}
-                height="150px"
+                height="400px"
               />
             )}
             {err !== "" && (
               <>
+                <div className="expand"></div>
                 <span className="heading">Errors</span>
                 <div className="errors">{err}</div>
               </>
@@ -150,10 +172,11 @@ function App() {
               name="batchOutput"
               text={batchOutput}
               setText={setBatchOutput}
-              height="300px"
+              height="400px"
             />
             {batchErr !== "" && (
               <>
+                <div className="expand"></div>
                 <span className="heading">Errors</span>
                 <div className="errors">{batchErr}</div>
               </>
@@ -162,6 +185,9 @@ function App() {
         )}
       </div>
       <div className="buttons_original">
+        {batchShown !== "" && (
+          <span className="side-heading">Batch {batchShown}</span>
+        )}
         {batchShown === "" && (
           <button
             onClick={async () => {
@@ -200,6 +226,7 @@ function App() {
             setIsTranslatingAndStore(false);
             setBatchShownAndStore("");
             setPhrasesAndStore([]);
+            setBatchDataResultsAndStore([]);
           }}
         >
           Reset
@@ -229,6 +256,8 @@ function App() {
           setBatchInput={setBatchInputAndStore}
           setErr={setBatchErrAndStore}
           setOutput={setBatchOutputAndStore}
+          batchDataResults={batchDataResults}
+          setBatchDataResults={setBatchDataResultsAndStore}
         />
       </div>
       <div className="footer"></div>

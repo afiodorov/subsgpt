@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, Dispatch, SetStateAction } from "react";
 import { fixCompletion, translateBatch } from "./ai";
 import { Phrase } from "./srtutils";
 import { batchSize } from "./translate";
@@ -13,10 +13,10 @@ const fetchData = async function (
   initPrompt: string,
   context: Phrase[],
   batch: Phrase[]
-): Promise<[Error | null, string]> {
+): Promise<[string, string]> {
   const response = await translateBatch(initPrompt, context, batch);
   if (response.isLeft()) {
-    return [response.value, ""];
+    return [response.value.message, ""];
   }
 
   const translations = response.value;
@@ -37,22 +37,19 @@ const fetchData = async function (
     );
 
     if (fixedResponse.isLeft()) {
-      return [fixedResponse.value, response.value];
+      return [fixedResponse.value.message, response.value];
     }
 
     try {
       parsed = convertStringToExpectedObject(fixedResponse.value);
     } catch (err) {
-      return [err as Error, fixedResponse.value];
+      return [(err as Error).message, fixedResponse.value];
     }
   }
   if (!parsed || !areKeysEqual(correct, parsed)) {
-    return [
-      new Error("Number of subtitles don't match"),
-      JSON.stringify(parsed, null, 4),
-    ];
+    return ["Number of subtitles don't match", JSON.stringify(parsed, null, 4)];
   }
-  return [null, JSON.stringify(parsed, null, 4)];
+  return ["", JSON.stringify(parsed, null, 4)];
 };
 
 export type BatchComponentProps = {
@@ -63,6 +60,10 @@ export type BatchComponentProps = {
   setBatchInput: (_: string) => void;
   setErr: (_: string) => void;
   setOutput: (_: string) => void;
+  batchDataResults: Array<[string, string] | undefined>;
+  setBatchDataResults: Dispatch<
+    SetStateAction<Array<[string, string] | undefined>>
+  >;
 };
 
 const BatchItem: React.FC<{
@@ -94,11 +95,9 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
   setBatchInput,
   setErr,
   setOutput,
+  batchDataResults,
+  setBatchDataResults,
 }) => {
-  const [batchDataResults, setBatchDataResults] = useState<
-    Array<[Error | null, string] | undefined>
-  >([]);
-
   const batches = new Array<string>();
   for (let i = 0; i < numBatches; i++) {
     const start = i * batchSize;
@@ -124,14 +123,12 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
       });
     };
 
-    setBatchDataResults(
-      new Array<[Error | null, string] | undefined>(numBatches).fill(undefined)
-    );
-
     for (let i = 0; i < numBatches; i++) {
-      fetchDataForBatch(i);
+      if (batchDataResults[i] === undefined) {
+        fetchDataForBatch(i);
+      }
     }
-  }, [numBatches, phrases, initPrompt]);
+  }, [numBatches, phrases, initPrompt, setBatchDataResults, batchDataResults]);
 
   const getBatchStatus = (index: number): boolean | null => {
     const result = batchDataResults[index];
@@ -146,7 +143,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
     if (result === undefined) {
       return;
     }
-    const err = result[0] === null ? "" : result[0].message;
+    const err = result[0];
     const output = result[1];
 
     setBatchInput(batches[index]);
@@ -160,6 +157,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
       {Array.from({ length: numBatches }, (_, i) => {
         return (
           <BatchItem
+            key={i}
             index={i}
             isOK={getBatchStatus(i)}
             showBatch={() => showBatch(i)}

@@ -6,6 +6,8 @@ export const translateBatch = async function (
   context: Phrase[],
   batch: Phrase[]
 ): Promise<Either<Error, string>> {
+  const randomNumber = Math.floor(Math.random() * 5000);
+  await new Promise((resolve) => setTimeout(resolve, randomNumber));
   return new Right('{"10": "hi"}');
 };
 
@@ -15,6 +17,7 @@ export const fixCompletion = async function (
   batch: Phrase[],
   wrongResponse: string
 ): Promise<Either<Error, string>> {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   const randomNumber = Math.floor(Math.random() * 101);
   return new Right(`{"${randomNumber}": "hi"}`);
 };

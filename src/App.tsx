@@ -225,7 +225,6 @@ function App() {
           numBatches={numBatches}
           phrases={phrases}
           initPrompt={initPrompt}
-          batchShown={batchShown}
           setBatchShown={setBatchShownAndStore}
           setBatchInput={setBatchInputAndStore}
           setErr={setBatchErrAndStore}

@@ -40,21 +40,15 @@ function App() {
   const [batchOutput, setBatchOutput] = useState<string>(
     localStorage.getItem("batchOutput") || ""
   );
-  const [passwordShown, setPasswordShown] = useState(false);
-  const [password, setPassword] = useState(
-    localStorage.getItem("password") || ""
-  );
+  const [apiKeyShown, setApiKeyShown] = useState(false);
+  const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
 
-  const setPasswordAndStore = useLocalStorageSetter(
-    setPassword,
-    "password",
-    false
-  );
-  const togglePasswordVisibility = () => {
-    setPasswordShown((passwordShown) => !passwordShown);
+  const setApiKeyAndStore = useLocalStorageSetter(setApiKey, "apiKey", false);
+  const toggleApiKeyVisibility = () => {
+    setApiKeyShown((apiKeyShown) => !apiKeyShown);
   };
-  const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setPasswordAndStore(event.target.value);
+  const handleApiKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setApiKeyAndStore(event.target.value);
   };
 
   const setTranslatedAndStore = useLocalStorageSetter(
@@ -194,19 +188,19 @@ function App() {
                     setText={setInitPromptAndStore}
                     height="400px"
                   />
-                  {err == "" && (
+                  {err === "" && (
                     <>
                       <span className="heading">Settings</span>
                       <div className="setting">
                         <input
-                          type={passwordShown ? "text" : "password"}
-                          value={password}
-                          onChange={handlePasswordChange}
+                          type={apiKeyShown ? "text" : "password"}
+                          value={apiKey}
+                          onChange={handleApiKeyChange}
                           placeholder="OPENAI_API_KEY"
                           className="pass"
                         />
-                        <button onClick={togglePasswordVisibility}>
-                          {passwordShown ? "Hide" : "Show"}
+                        <button onClick={toggleApiKeyVisibility}>
+                          {apiKeyShown ? "Hide" : "Show"}
                         </button>
                       </div>
                     </>
@@ -297,8 +291,11 @@ function App() {
         {batchShown === "" ? (
           <>
             <button
-              onClick={() => setTranslatedAndStore("")}
-              disabled={translated === ""}
+              onClick={() => {
+                setTranslatedAndStore("");
+                setErr("");
+              }}
+              disabled={translated === "" && err === ""}
             >
               Clear
             </button>
@@ -339,7 +336,7 @@ function App() {
               </button>
             ) : (
               <button
-                disabled={!isDone() || translated != ""}
+                disabled={!isDone() || translated !== ""}
                 onClick={() =>
                   makeResultHandler(
                     isDone,

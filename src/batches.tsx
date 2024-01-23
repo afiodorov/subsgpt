@@ -12,9 +12,10 @@ import {
 const fetchData = async function (
   initPrompt: string,
   context: Phrase[],
-  batch: Phrase[]
+  batch: Phrase[],
+  signal: AbortSignal
 ): Promise<[string, string]> {
-  const response = await translateBatch(initPrompt, context, batch);
+  const response = await translateBatch(initPrompt, context, batch, signal);
   if (response.isLeft()) {
     return [response.value.message, ""];
   }
@@ -33,7 +34,8 @@ const fetchData = async function (
       initPrompt,
       context,
       batch,
-      translations
+      translations,
+      signal
     );
 
     if (fixedResponse.isLeft()) {
@@ -98,9 +100,6 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
   batchDataResults,
   setBatchDataResults,
 }) => {
-  const controller = new AbortController();
-  const signal = controller.signal;
-
   const batches = new Array<string>();
   for (let i = 0; i < numBatches; i++) {
     const start = i * batchSize;
@@ -110,6 +109,9 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
   }
 
   useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
     const fetchDataForBatch = async (index: number) => {
       if (batchDataResults[index] === null) {
         return;
@@ -128,7 +130,12 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
       const previousBatch =
         index > 0 ? phrases.slice(start - batchSize, start) : [];
 
-      const result = await fetchData(initPrompt, previousBatch, currentBatch);
+      const result = await fetchData(
+        initPrompt,
+        previousBatch,
+        currentBatch,
+        signal
+      );
 
       setBatchDataResults((prevResults) => {
         if (signal.aborted) {
@@ -151,7 +158,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
     return () => {
       controller.abort();
     };
-  }, [numBatches, phrases, initPrompt, setBatchDataResults, batchDataResults]);
+  }, [numBatches, phrases, initPrompt]);
 
   const getBatchStatus = (index: number): boolean | null => {
     const result = batchDataResults[index];

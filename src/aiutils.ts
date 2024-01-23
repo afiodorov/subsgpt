@@ -51,7 +51,7 @@ export function convertStringToExpectedObject(str: string): ExpectedObject {
     throw new Error(`Failed to parse JSON: ${(error as Error).message}`);
   }
 
-  const result: { [key: number]: any } = {};
+  const result: { [key: number]: object | string } = {};
   for (const key in parsedObj) {
     if (parsedObj.hasOwnProperty(key)) {
       const numericKey = Number(key);

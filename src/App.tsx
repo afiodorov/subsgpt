@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import "./App.css";
 import { Editor } from "./editor";
 import { uploadAndStoreFile } from "./fileutils";
@@ -16,9 +16,6 @@ import { BatchComponent } from "./batches";
 import { Phrase } from "./srtutils";
 
 function App() {
-  const [translateClicked, setTranslateClicked] = useState<boolean>(
-    JSON.parse(localStorage.getItem("translateClicked") || "false")
-  );
   const [original, setOriginal] = useState<string>(
     localStorage.getItem("uploadedFile") || ""
   );
@@ -43,11 +40,22 @@ function App() {
   const [batchOutput, setBatchOutput] = useState<string>(
     localStorage.getItem("batchOutput") || ""
   );
-
-  const setTranslateClickedAndStore = useLocalStorageSetter(
-    setTranslateClicked,
-    "translateClicked"
+  const [passwordShown, setPasswordShown] = useState(false);
+  const [password, setPassword] = useState(
+    localStorage.getItem("password") || ""
   );
+
+  const setPasswordAndStore = useLocalStorageSetter(
+    setPassword,
+    "password",
+    false
+  );
+  const togglePasswordVisibility = () => {
+    setPasswordShown((passwordShown) => !passwordShown);
+  };
+  const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setPasswordAndStore(event.target.value);
+  };
 
   const setTranslatedAndStore = useLocalStorageSetter(
     setTranslated,
@@ -179,12 +187,31 @@ function App() {
               {isTranslating() ? (
                 <span className="static-prompt-large">{initPrompt}</span>
               ) : (
-                <Editor
-                  name="prompt"
-                  text={initPrompt}
-                  setText={setInitPromptAndStore}
-                  height="400px"
-                />
+                <>
+                  <Editor
+                    name="prompt"
+                    text={initPrompt}
+                    setText={setInitPromptAndStore}
+                    height="400px"
+                  />
+                  {err == "" && (
+                    <>
+                      <span className="heading">Settings</span>
+                      <div className="setting">
+                        <input
+                          type={passwordShown ? "text" : "password"}
+                          value={password}
+                          onChange={handlePasswordChange}
+                          placeholder="OPENAI_API_KEY"
+                          className="pass"
+                        />
+                        <button onClick={togglePasswordVisibility}>
+                          {passwordShown ? "Hide" : "Show"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
               )}
               {err !== "" && (
                 <>
@@ -286,7 +313,6 @@ function App() {
                 setBatchDataResultsAndStore([]);
                 setTranslatedAndStore("");
                 setOriginalAndStore("");
-                setTranslateClickedAndStore(false);
               }}
             >
               Restart
@@ -301,7 +327,6 @@ function App() {
               <button
                 disabled={isTranslating()}
                 onClick={async () => {
-                  setTranslateClickedAndStore(true);
                   translateHandler(
                     original,
                     setErrAndStore,

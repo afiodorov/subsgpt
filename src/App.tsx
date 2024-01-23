@@ -144,21 +144,25 @@ function App() {
         <div className="title">Translate Subtitles</div>
       </div>
       <div className="original">
-        {batchShown === "" && (
+        {batchShown === "" ? (
           <Editor
             name="original"
             text={original}
             setText={setOriginalAndStore}
             readOnly={isTranslating()}
           />
-        )}
-        {batchShown !== "" && (
-          <Editor
-            name="batch"
-            text={batchInput}
-            setText={setBatchInputAndStore}
-            readOnly={true}
-          />
+        ) : (
+          <>
+            <Editor
+              name="batch"
+              text={batchInput}
+              setText={setBatchInputAndStore}
+              readOnly={true}
+              height={"400px"}
+            />
+            <div className="heading">Prompt</div>
+            <span className="static-prompt-small">{initPrompt}</span>
+          </>
         )}
       </div>
       <div className="translated">
@@ -173,7 +177,7 @@ function App() {
             <>
               <div className="heading">Prompt</div>
               {isTranslating() ? (
-                <span>{initPrompt}</span>
+                <span className="static-prompt-large">{initPrompt}</span>
               ) : (
                 <Editor
                   name="prompt"

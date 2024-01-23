@@ -52,6 +52,9 @@ body {
 
 .App > .original {
   grid-area: o;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .App > .translated {
@@ -151,20 +154,16 @@ button:disabled:hover {
 }
 
 .errors {
-  height: calc(1.1em * 4);
+  overflow-y: auto;
+  height: 80px;
   background-color: #ed7476;
   width: 100%;
   border-radius: 10px;
   font-style: italic;
   text-align: center;
-  margin-bottom: 0px 10px 10px 10px;
+  margin: 0px 10px 10px 10px;
   padding: 10px 5px;
   white-space: normal;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
 }
 
 .App > .batch {
@@ -196,4 +195,14 @@ button:disabled:hover {
   height: 16px;
   width: 16px;
   margin-right: 2px;
+}
+
+.static-prompt-small {
+  height: 100px;
+  overflow-y: auto;
+}
+
+.static-prompt-large {
+  height: 400px;
+  overflow-y: auto;
 }

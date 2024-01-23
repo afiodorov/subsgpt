@@ -131,3 +131,50 @@ export function downloadTranslatedFileHandler(translated: string) {
   document.body.removeChild(link);
   URL.revokeObjectURL(href);
 }
+
+export function makeResultHandler(
+  isDone: () => boolean,
+  phrases: Phrase[],
+  batchDataResults: Array<[string, string] | undefined | null>,
+  setTranslated: (s: string) => void
+) {
+  let res = "";
+  if (!isDone()) {
+    return;
+  }
+
+  for (let i = 0; i < phrases.length; i++) {
+    const phrase = phrases[i];
+    const batchNumber = Math.floor(i / batchSize);
+    const batch = batchDataResults[batchNumber];
+    if (!batch) {
+      console.log("expected batch");
+      return;
+    }
+
+    let parsed: ExpectedObject | null = null;
+    try {
+      parsed = convertStringToExpectedObject(batch[1]);
+    } catch (error) {
+      console.log(`should have parsed: ${error}`);
+      return;
+    }
+    if (!parsed) {
+      console.log("parsed is null");
+      return;
+    }
+
+    const translated = parsed[i + 1];
+    if (!translated) {
+      console.log(`not translated for batch ${batchNumber} phrase ${i}`);
+      return;
+    }
+
+    res += `${phrase.number}\n${phrase.time}\n${translated}`;
+    if (i !== phrases.length - 1) {
+      res += "\n\n";
+    }
+  }
+
+  setTranslated(res);
+}

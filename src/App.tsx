@@ -20,7 +20,9 @@ function App() {
   const [original, setOriginal] = useState<string>(
     localStorage.getItem("uploadedFile") || ""
   );
-  const [translated, setTranslated] = useState<string>("");
+  const [translated, setTranslated] = useState<string>(
+    localStorage.getItem("translated") || ""
+  );
   const [err, setErr] = useState<string>(localStorage.getItem("err") || "");
   const [initPrompt, setInitPrompt] = useState<string>(
     localStorage.getItem("initPrompt") || translate
@@ -38,6 +40,12 @@ function App() {
   );
   const [batchOutput, setBatchOutput] = useState<string>(
     localStorage.getItem("batchOutput") || ""
+  );
+
+  const setTranslatedAndStore = useLocalStorageSetter(
+    setTranslated,
+    "translated",
+    false
   );
 
   const setOriginalAndStore = useLocalStorageSetter(
@@ -111,7 +119,7 @@ function App() {
 
   const makeResult = () => {
     let res = "";
-    if (isTranslating()) {
+    if (!isDone()) {
       return;
     }
 
@@ -148,14 +156,18 @@ function App() {
       }
     }
 
-    setTranslated(res);
+    setTranslatedAndStore(res);
   };
 
   const isTranslating = () => {
+    return batchDataResults.length !== 0;
+  };
+
+  const isDone = () => {
     if (batchDataResults.length === 0) {
       return false;
     }
-    return !batchDataResults.every((x) => x && x[0] === "");
+    return batchDataResults.every((x) => x && x[0] === "");
   };
 
   return (
@@ -186,7 +198,7 @@ function App() {
       </div>
       <div className="translated">
         {batchShown === "" &&
-          (batchDataResults.every((x) => x && x[0] === "") ? (
+          (isDone() ? (
             <Editor
               name="translated"
               text={translated}
@@ -253,7 +265,7 @@ function App() {
             onClick={async () => {
               setOriginalAndStore("");
             }}
-            disabled={batchDataResults.length !== 0}
+            disabled={isTranslating()}
           >
             Clear
           </button>
@@ -270,7 +282,7 @@ function App() {
         {batchShown === "" && (
           <button
             onClick={async () => uploadAndStoreFile(setOriginal)}
-            disabled={batchDataResults.length !== 0}
+            disabled={isTranslating()}
           >
             Upload .srt
           </button>
@@ -288,19 +300,20 @@ function App() {
                 setBatchShownAndStore("");
                 setPhrasesAndStore([]);
                 setBatchDataResultsAndStore([]);
+                setTranslatedAndStore("");
               }}
             >
               Reset
             </button>
             <button
-              disabled={isTranslating()}
+              disabled={!isDone()}
               onClick={() => downloadTranslatedFileHandler(translated)}
             >
               Download
             </button>
-            {batchDataResults.length === 0 ? (
+            {!isTranslating() ? (
               <button
-                disabled={batchDataResults.length !== 0}
+                disabled={isTranslating()}
                 onClick={async () =>
                   translateHandler(
                     original,
@@ -313,7 +326,7 @@ function App() {
                 Translate
               </button>
             ) : (
-              <button disabled={isTranslating()} onClick={makeResult}>
+              <button disabled={!isDone()} onClick={makeResult}>
                 Result
               </button>
             )}

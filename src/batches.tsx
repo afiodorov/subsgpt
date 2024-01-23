@@ -137,7 +137,6 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
     for (let i = 0; i < numBatches; i++) {
       if (batchDataResults[i] === undefined) {
         if (batchDataResults[i] === undefined) {
-          console.log(`fetching for ${i}`);
           fetchDataForBatch(i);
         }
       }

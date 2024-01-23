@@ -108,6 +108,9 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
 
   useEffect(() => {
     const fetchDataForBatch = async (index: number) => {
+      if (batchDataResults[index] === null) {
+        return;
+      }
       setBatchDataResults((prevResults) => {
         const newResults = [...prevResults];
         if (newResults[index] === undefined) {
@@ -115,10 +118,6 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
         }
         return newResults;
       });
-
-      if (batchDataResults[index] === null) {
-        return;
-      }
 
       const start = index * batchSize;
       const end = start + batchSize;

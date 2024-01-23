@@ -1,15 +1,50 @@
+import { OpenAI } from "openai";
 import { Phrase } from "./srtutils";
 import { Either, Right, Left } from "./either";
+import { convertToPhraseObject } from "./srtutils";
 
 export const translateBatch = async function (
   initPrompt: string,
   context: Phrase[],
   batch: Phrase[],
-  signal: AbortSignal
+  signal: AbortSignal,
+  apiKey: string
 ): Promise<Either<Error, string>> {
-  const randomNumber = Math.floor(Math.random() * 5_000);
-  await new Promise((resolve) => setTimeout(resolve, randomNumber));
-  return new Right('{"10": "hi"}');
+  const openai = new OpenAI({
+    apiKey: apiKey,
+    dangerouslyAllowBrowser: true,
+  });
+  if (signal.aborted) {
+    return new Left(new Error("aborted"));
+  }
+
+  const msgs: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: "system", content: initPrompt },
+  ];
+  if (context) {
+    msgs.push({
+      role: "user",
+      content: `Conversational context to help you translate better ${JSON.stringify(
+        convertToPhraseObject(context)
+      )}`,
+    });
+  }
+
+  msgs.push({
+    role: "user",
+    content: JSON.stringify(convertToPhraseObject(batch)),
+  });
+  try {
+    const chatCompletion = await openai.chat.completions.create({
+      messages: msgs,
+      model: "gpt-4-1106-preview",
+      response_format: { type: "json_object" },
+      seed: 0,
+    });
+    return new Right(chatCompletion.choices[0].message.content || "");
+  } catch (error) {
+    return new Left(error as Error);
+  }
 };
 
 export const fixCompletion = async function (
@@ -17,9 +52,54 @@ export const fixCompletion = async function (
   context: Phrase[],
   batch: Phrase[],
   wrongResponse: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  apiKey: string
 ): Promise<Either<Error, string>> {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  const randomNumber = Math.floor(Math.random() * 101);
-  return new Right(`{"${randomNumber}": "hi"}`);
+  const openai = new OpenAI({
+    apiKey: apiKey,
+    dangerouslyAllowBrowser: true,
+  });
+  if (signal.aborted) {
+    return new Left(new Error("aborted"));
+  }
+
+  const original = convertToPhraseObject(batch);
+
+  const msgs: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: "system", content: initPrompt },
+  ];
+  if (context) {
+    msgs.push({
+      role: "user",
+      content: `Conversational context to help you translate better ${JSON.stringify(
+        convertToPhraseObject(context)
+      )}`,
+    });
+  }
+
+  msgs.push({
+    role: "user",
+    content: JSON.stringify(original),
+  });
+  msgs.push({
+    role: "assistant",
+    content: wrongResponse,
+  });
+  msgs.push({
+    role: "user",
+    content: `Great, but fix this error now: returned translation should have keys: ${JSON.stringify(
+      Object.keys(original)
+    )}`,
+  });
+  try {
+    const chatCompletion = await openai.chat.completions.create({
+      messages: msgs,
+      model: "gpt-4-1106-preview",
+      response_format: { type: "json_object" },
+      seed: 0,
+    });
+    return new Right(chatCompletion.choices[0].message.content || "");
+  } catch (error) {
+    return new Left(error as Error);
+  }
 };

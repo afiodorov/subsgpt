@@ -401,6 +401,7 @@ function App() {
           setOutput={setBatchOutputAndStore}
           batchDataResults={batchDataResults}
           setBatchDataResults={setBatchDataResultsAndStore}
+          apiKey={apiKey}
         />
       </div>
       <div className="footer"></div>

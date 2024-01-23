@@ -6,7 +6,7 @@ export const translateBatch = async function (
   context: Phrase[],
   batch: Phrase[]
 ): Promise<Either<Error, string>> {
-  const randomNumber = Math.floor(Math.random() * 5000);
+  const randomNumber = Math.floor(Math.random() * 5_000);
   await new Promise((resolve) => setTimeout(resolve, randomNumber));
   return new Right('{"10": "hi"}');
 };

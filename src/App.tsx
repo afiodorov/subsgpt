@@ -98,7 +98,7 @@ function App() {
   }, [setIsTranslating]);
 
   const [batchDataResults, setBatchDataResults] = useState<
-    Array<[string, string] | undefined>
+    Array<[string, string] | undefined | null>
   >(
     (
       JSON.parse(
@@ -183,9 +183,12 @@ function App() {
                     setBatchDataResultsAndStore
                   );
                 }
-                setBatchOutput(batchOutput);
+                setBatchOutputAndStore(batchOutput);
               }}
               height="400px"
+              readOnly={batchDataResults.some(
+                (x) => x === undefined || x === null
+              )}
             />
             {batchErr !== "" && (
               <>
@@ -273,13 +276,23 @@ function App() {
                 validateHandler(
                   batchShown,
                   phrases,
-                  setBatchDataResultsAndStore
+                  setBatchDataResultsAndStore,
+                  setBatchErrAndStore
                 );
               }}
+              disabled={batchDataResults.some(
+                (x) => x === undefined || x === null
+              )}
             >
               Validate
             </button>
-            <button>Format</button>
+            <button
+              disabled={batchDataResults.some(
+                (x) => x === undefined || x === null
+              )}
+            >
+              Format
+            </button>
           </>
         )}
       </div>

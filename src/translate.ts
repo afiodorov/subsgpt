@@ -33,7 +33,7 @@ export function editBatchHandler(
   index: number,
   results: string,
   setBatchDataResults: Dispatch<
-    SetStateAction<Array<[string, string] | undefined>>
+    SetStateAction<Array<[string, string] | undefined | null>>
   >
 ) {
   setBatchDataResults((prevResults) => {
@@ -41,7 +41,7 @@ export function editBatchHandler(
     const prev = prevResults[index];
 
     let err = "";
-    if (prev !== undefined) {
+    if (prev !== undefined && prev !== null) {
       err = prev[0];
     }
     newResults[index] = [err, results];
@@ -53,8 +53,9 @@ export function validateHandler(
   index: number,
   phrases: Phrase[],
   setBatchDataResults: Dispatch<
-    SetStateAction<Array<[string, string] | undefined>>
-  >
+    SetStateAction<Array<[string, string] | undefined | null>>
+  >,
+  setErr: (_: string) => void
 ) {
   const start = index * batchSize;
   const end = start + batchSize;
@@ -62,7 +63,7 @@ export function validateHandler(
 
   setBatchDataResults((prevResults) => {
     const prev = prevResults[index];
-    if (prev === undefined) {
+    if (prev === undefined || prev === null) {
       return prevResults;
     }
 
@@ -72,15 +73,19 @@ export function validateHandler(
       parsed = convertStringToExpectedObject(prev[1]);
     } catch (err) {
       newResults[index] = [(err as Error).message, prev[1]];
+      setErr((err as Error).message);
       return newResults;
     }
 
     if (!parsed || !areKeysEqual(correct, parsed)) {
-      newResults[index] = ["Number of subtitles don't match", prev[1]];
+      const err = "Number of subtitles don't match";
+      newResults[index] = [err, prev[1]];
+      setErr(err);
       return newResults;
     }
 
     newResults[index] = ["", prev[1]];
+    setErr("");
     return newResults;
   });
 }

@@ -60,9 +60,9 @@ export type BatchComponentProps = {
   setBatchInput: (_: string) => void;
   setErr: (_: string) => void;
   setOutput: (_: string) => void;
-  batchDataResults: Array<[string, string] | undefined>;
+  batchDataResults: Array<[string, string] | undefined | null>;
   setBatchDataResults: Dispatch<
-    SetStateAction<Array<[string, string] | undefined>>
+    SetStateAction<Array<[string, string] | undefined | null>>
   >;
 };
 
@@ -108,6 +108,18 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
 
   useEffect(() => {
     const fetchDataForBatch = async (index: number) => {
+      setBatchDataResults((prevResults) => {
+        const newResults = [...prevResults];
+        if (newResults[index] === undefined) {
+          newResults[index] = null;
+        }
+        return newResults;
+      });
+
+      if (batchDataResults[index] === null) {
+        return;
+      }
+
       const start = index * batchSize;
       const end = start + batchSize;
       const currentBatch = phrases.slice(start, end);
@@ -125,22 +137,25 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
 
     for (let i = 0; i < numBatches; i++) {
       if (batchDataResults[i] === undefined) {
-        fetchDataForBatch(i);
+        if (batchDataResults[i] === undefined) {
+          console.log(`fetching for ${i}`);
+          fetchDataForBatch(i);
+        }
       }
     }
   }, [numBatches, phrases, initPrompt, setBatchDataResults, batchDataResults]);
 
   const getBatchStatus = (index: number): boolean | null => {
     const result = batchDataResults[index];
-    if (result === undefined) {
+    if (result === undefined || result === null) {
       return null;
     }
-    return result[0] === null;
+    return result[0] === "";
   };
 
   const showBatch = (index: number) => {
     const result = batchDataResults[index];
-    if (result === undefined) {
+    if (result === undefined || result === null) {
       return;
     }
     const err = result[0];

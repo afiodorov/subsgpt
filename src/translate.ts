@@ -118,3 +118,16 @@ export function formatHandler(
     return newResults;
   });
 }
+
+export function downloadTranslatedFileHandler(translated: string) {
+  const blob = new Blob([translated], { type: "text/plain" });
+  const href = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = href;
+  link.download = "translated.srt";
+  document.body.appendChild(link);
+  link.click();
+
+  document.body.removeChild(link);
+  URL.revokeObjectURL(href);
+}

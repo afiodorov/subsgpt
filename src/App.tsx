@@ -4,14 +4,17 @@ import { Editor } from "./editor";
 import { uploadAndStoreFile } from "./fileutils";
 import { translate } from "./prompts";
 import {
+  downloadTranslatedFileHandler,
   translateHandler,
   editBatchHandler,
   validateHandler,
   formatHandler,
+  batchSize,
 } from "./translate";
 import { useLocalStorageSetter } from "./storage";
 import { BatchComponent } from "./batches";
 import { Phrase } from "./srtutils";
+import { convertStringToExpectedObject, ExpectedObject } from "./aiutils";
 
 function App() {
   const [original, setOriginal] = useState<string>(
@@ -105,6 +108,48 @@ function App() {
     setBatchDataResults,
     "batchDataResults"
   );
+
+  const makeResult = () => {
+    let res = "";
+    if (isTranslating()) {
+      return;
+    }
+
+    for (let i = 0; i < phrases.length; i++) {
+      const phrase = phrases[i];
+      const batchNumber = Math.floor(i / batchSize);
+      const batch = batchDataResults[batchNumber];
+      if (!batch) {
+        console.log("expected batch");
+        return;
+      }
+
+      let parsed: ExpectedObject | null = null;
+      try {
+        parsed = convertStringToExpectedObject(batch[1]);
+      } catch (error) {
+        console.log(`should have parsed: ${error}`);
+        return;
+      }
+      if (!parsed) {
+        console.log("parsed is null");
+        return;
+      }
+
+      const translated = parsed[i + 1];
+      if (!translated) {
+        console.log(`not translated for batch ${batchNumber} phrase ${i}`);
+        return;
+      }
+
+      res += `${phrase.number}\n${phrase.time}\n${translated}`;
+      if (i !== phrases.length - 1) {
+        res += "\n\n";
+      }
+    }
+
+    setTranslated(res);
+  };
 
   const isTranslating = () => {
     if (batchDataResults.length === 0) {
@@ -247,20 +292,31 @@ function App() {
             >
               Reset
             </button>
-            <button disabled={isTranslating()}>Download</button>
             <button
-              disabled={batchDataResults.length !== 0}
-              onClick={async () =>
-                translateHandler(
-                  original,
-                  setErrAndStore,
-                  setNumBatchesAndStore,
-                  setPhrasesAndStore
-                )
-              }
+              disabled={isTranslating()}
+              onClick={() => downloadTranslatedFileHandler(translated)}
             >
-              Translate
+              Download
             </button>
+            {batchDataResults.length === 0 ? (
+              <button
+                disabled={batchDataResults.length !== 0}
+                onClick={async () =>
+                  translateHandler(
+                    original,
+                    setErrAndStore,
+                    setNumBatchesAndStore,
+                    setPhrasesAndStore
+                  )
+                }
+              >
+                Translate
+              </button>
+            ) : (
+              <button disabled={isTranslating()} onClick={makeResult}>
+                Result
+              </button>
+            )}
           </>
         ) : (
           <>

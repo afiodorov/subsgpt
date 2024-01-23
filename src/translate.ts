@@ -13,11 +13,8 @@ export function translateHandler(
   text: string,
   setErr: (err: string) => void,
   setNumBatches: (b: number) => void,
-  setIsTranslating: (_: boolean) => void,
   setPhrases: (_: Phrase[]) => void
 ) {
-  setIsTranslating(true);
-
   const subs = parse(text);
   if (subs.isLeft()) {
     setErr(subs.value);

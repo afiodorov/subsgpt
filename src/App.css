@@ -93,7 +93,7 @@ body {
 .buttons_translated {
   background-color: #ebb855;
   display: flex;
-  justify-content: end;
+  justify-content: flex-end;
   gap: 20px;
 }
 

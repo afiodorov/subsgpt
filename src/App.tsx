@@ -3,7 +3,11 @@ import "./App.css";
 import { Editor } from "./editor";
 import { uploadAndStoreFile } from "./fileutils";
 import { translate } from "./prompts";
-import { translateHandler } from "./translate";
+import {
+  translateHandler,
+  editBatchHandler,
+  validateHandler,
+} from "./translate";
 import { useLocalStorageSetter } from "./storage";
 import { BatchComponent } from "./batches";
 import { Phrase } from "./srtutils";
@@ -171,7 +175,16 @@ function App() {
             <Editor
               name="batchOutput"
               text={batchOutput}
-              setText={setBatchOutput}
+              setText={(batchOutput: string) => {
+                if (typeof batchShown === "number") {
+                  editBatchHandler(
+                    batchShown,
+                    batchOutput,
+                    setBatchDataResultsAndStore
+                  );
+                }
+                setBatchOutput(batchOutput);
+              }}
               height="400px"
             />
             {batchErr !== "" && (
@@ -217,35 +230,58 @@ function App() {
         )}
       </div>
       <div className="buttons_translated">
-        <button
-          onClick={async () => {
-            setErrAndStore("");
-            setBatchErrAndStore("");
-            setInitPromptAndStore(translate);
-            setNumBatchesAndStore(0);
-            setIsTranslatingAndStore(false);
-            setBatchShownAndStore("");
-            setPhrasesAndStore([]);
-            setBatchDataResultsAndStore([]);
-          }}
-        >
-          Reset
-        </button>
-        <button disabled={true}>Download</button>
-        <button
-          disabled={isTranslating}
-          onClick={async () =>
-            translateHandler(
-              original,
-              setErrAndStore,
-              setNumBatchesAndStore,
-              setIsTranslatingAndStore,
-              setPhrasesAndStore
-            )
-          }
-        >
-          Translate
-        </button>
+        {batchShown === "" ? (
+          <>
+            <button
+              onClick={async () => {
+                setErrAndStore("");
+                setBatchErrAndStore("");
+                setInitPromptAndStore(translate);
+                setNumBatchesAndStore(0);
+                setIsTranslatingAndStore(false);
+                setBatchShownAndStore("");
+                setPhrasesAndStore([]);
+                setBatchDataResultsAndStore([]);
+              }}
+            >
+              Reset
+            </button>
+            <button disabled={true}>Download</button>
+            <button
+              disabled={isTranslating}
+              onClick={async () =>
+                translateHandler(
+                  original,
+                  setErrAndStore,
+                  setNumBatchesAndStore,
+                  setIsTranslatingAndStore,
+                  setPhrasesAndStore
+                )
+              }
+            >
+              Translate
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={async () => {
+                if (typeof batchShown !== "number") {
+                  return;
+                }
+
+                validateHandler(
+                  batchShown,
+                  phrases,
+                  setBatchDataResultsAndStore
+                );
+              }}
+            >
+              Validate
+            </button>
+            <button>Format</button>
+          </>
+        )}
       </div>
       <div className="batch" id="batch">
         <BatchComponent

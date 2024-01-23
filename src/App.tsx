@@ -16,6 +16,9 @@ import { BatchComponent } from "./batches";
 import { Phrase } from "./srtutils";
 
 function App() {
+  const [translateClicked, setTranslateClicked] = useState<boolean>(
+    JSON.parse(localStorage.getItem("translateClicked") || "false")
+  );
   const [original, setOriginal] = useState<string>(
     localStorage.getItem("uploadedFile") || ""
   );
@@ -39,6 +42,11 @@ function App() {
   );
   const [batchOutput, setBatchOutput] = useState<string>(
     localStorage.getItem("batchOutput") || ""
+  );
+
+  const setTranslateClickedAndStore = useLocalStorageSetter(
+    setTranslateClicked,
+    "translateClicked"
   );
 
   const setTranslatedAndStore = useLocalStorageSetter(
@@ -273,6 +281,8 @@ function App() {
                 setPhrasesAndStore([]);
                 setBatchDataResultsAndStore([]);
                 setTranslatedAndStore("");
+                setOriginalAndStore("");
+                setTranslateClickedAndStore(false);
               }}
             >
               Restart
@@ -286,14 +296,15 @@ function App() {
             {!isTranslating() ? (
               <button
                 disabled={isTranslating()}
-                onClick={async () =>
+                onClick={async () => {
+                  setTranslateClickedAndStore(true);
                   translateHandler(
                     original,
                     setErrAndStore,
                     setNumBatchesAndStore,
                     setPhrasesAndStore
-                  )
-                }
+                  );
+                }}
               >
                 Translate
               </button>

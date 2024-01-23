@@ -89,3 +89,35 @@ export function validateHandler(
     return newResults;
   });
 }
+
+export function formatHandler(
+  index: number,
+  setBatchDataResults: Dispatch<
+    SetStateAction<Array<[string, string] | undefined | null>>
+  >,
+  setBatchOutput: (v: string) => void
+) {
+  setBatchDataResults((prevResults) => {
+    const prev = prevResults[index];
+    if (prev === undefined || prev === null) {
+      return prevResults;
+    }
+
+    let parsed: ExpectedObject | null = null;
+    try {
+      parsed = convertStringToExpectedObject(prev[1]);
+    } catch (err) {
+      return prevResults;
+    }
+
+    if (!parsed) {
+      return prevResults;
+    }
+
+    const newResults = [...prevResults];
+    const value = JSON.stringify(parsed, null, 4);
+    newResults[index] = [prev[0], value];
+    setBatchOutput(value);
+    return newResults;
+  });
+}

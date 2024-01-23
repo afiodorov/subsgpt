@@ -7,6 +7,7 @@ import {
   translateHandler,
   editBatchHandler,
   validateHandler,
+  formatHandler,
 } from "./translate";
 import { useLocalStorageSetter } from "./storage";
 import { BatchComponent } from "./batches";
@@ -290,6 +291,15 @@ function App() {
               disabled={batchDataResults.some(
                 (x) => x === undefined || x === null
               )}
+              onClick={async () => {
+                if (typeof batchShown === "number") {
+                  formatHandler(
+                    batchShown,
+                    setBatchDataResultsAndStore,
+                    setBatchOutputAndStore
+                  );
+                }
+              }}
             >
               Format
             </button>

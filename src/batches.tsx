@@ -98,6 +98,9 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
   batchDataResults,
   setBatchDataResults,
 }) => {
+  const controller = new AbortController();
+  const signal = controller.signal;
+
   const batches = new Array<string>();
   for (let i = 0; i < numBatches; i++) {
     const start = i * batchSize;
@@ -128,6 +131,9 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
       const result = await fetchData(initPrompt, previousBatch, currentBatch);
 
       setBatchDataResults((prevResults) => {
+        if (signal.aborted) {
+          return prevResults;
+        }
         const newResults = [...prevResults];
         newResults[index] = result;
         return newResults;
@@ -141,6 +147,10 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
         }
       }
     }
+
+    return () => {
+      controller.abort();
+    };
   }, [numBatches, phrases, initPrompt, setBatchDataResults, batchDataResults]);
 
   const getBatchStatus = (index: number): boolean | null => {

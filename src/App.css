@@ -33,19 +33,19 @@ body {
 
 @media screen and (max-width: 850px) {
   .App {
-    grid-template-columns: 1fr;
+    grid-template-columns: 5px 1fr 5px;
     grid-template-rows:
       80px 575px 50px 575px 50px minmax(min-content, max-content)
       10px 20px;
     grid-template-areas:
-      "h"
-      "o"
-      "c"
-      "t"
-      "v"
-      "b"
-      "f"
-      "s";
+      ". h ."
+      ". o ."
+      ". c ."
+      ". t ."
+      ". v ."
+      ". b ."
+      ". f ."
+      ". s .";
   }
   .App > .footer {
     border-bottom-left-radius: 10px;
@@ -54,6 +54,7 @@ body {
   .App > .original {
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
+    padding: 10px;
   }
   .App > .buttons_original {
     border-bottom-left-radius: 10px;
@@ -61,6 +62,16 @@ body {
   }
   .App > .translated {
     border-top-left-radius: 10px;
+    padding: 10px;
+  }
+}
+
+@media screen and (min-width: 851px) {
+  .App > .original {
+    padding: 10px 5px 0px 10px;
+  }
+  .App > .translated {
+    padding: 10px 10px 0px 5px;
   }
 }
 
@@ -104,12 +115,10 @@ body {
 }
 
 .App > .original {
-  padding: 10px 5px 0px 10px;
   border-top-left-radius: 10px;
 }
 
 .App > .translated {
-  padding: 10px 10px 0px 5px;
   border-top-right-radius: 10px;
 }
 

@@ -31,6 +31,39 @@ body {
     ". s s .";
 }
 
+@media screen and (max-width: 850px) {
+  .App {
+    grid-template-columns: 1fr;
+    grid-template-rows:
+      80px 575px 50px 575px 50px minmax(min-content, max-content)
+      10px 20px;
+    grid-template-areas:
+      "h"
+      "o"
+      "c"
+      "t"
+      "v"
+      "b"
+      "f"
+      "s";
+  }
+  .App > .footer {
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+  .App > .original {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+  }
+  .App > .buttons_original {
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+  .App > .translated {
+    border-top-left-radius: 10px;
+  }
+}
+
 .App > .header {
   grid-area: h;
   background-color: #ffaaab;

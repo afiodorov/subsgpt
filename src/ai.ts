@@ -8,6 +8,7 @@ export const translateBatch = async function (
   context: Phrase[],
   batch: Phrase[],
   signal: AbortSignal,
+  model: string,
   apiKey: string
 ): Promise<Either<Error, string>> {
   const openai = new OpenAI({
@@ -37,7 +38,7 @@ export const translateBatch = async function (
   try {
     const chatCompletion = await openai.chat.completions.create({
       messages: msgs,
-      model: "gpt-4-1106-preview",
+      model: model,
       response_format: { type: "json_object" },
       seed: 0,
     });
@@ -53,6 +54,7 @@ export const fixCompletion = async function (
   batch: Phrase[],
   wrongResponse: string,
   signal: AbortSignal,
+  model: string,
   apiKey: string
 ): Promise<Either<Error, string>> {
   const openai = new OpenAI({
@@ -94,7 +96,7 @@ export const fixCompletion = async function (
   try {
     const chatCompletion = await openai.chat.completions.create({
       messages: msgs,
-      model: "gpt-4-1106-preview",
+      model: model,
       response_format: { type: "json_object" },
       seed: 0,
     });

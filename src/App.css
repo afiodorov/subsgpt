@@ -219,3 +219,10 @@ button:disabled:hover {
   width: 100%;
   margin-right: 10px;
 }
+
+.model {
+  border-radius: 10px;
+  margin-right: auto;
+  width: 20ch;
+  margin-right: 10px;
+}

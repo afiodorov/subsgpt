@@ -14,6 +14,7 @@ const fetchData = async function (
   context: Phrase[],
   batch: Phrase[],
   signal: AbortSignal,
+  model: string,
   apiKey: string
 ): Promise<[string, string]> {
   const response = await translateBatch(
@@ -21,6 +22,7 @@ const fetchData = async function (
     context,
     batch,
     signal,
+    model,
     apiKey
   );
   if (response.isLeft()) {
@@ -43,6 +45,7 @@ const fetchData = async function (
       batch,
       translations,
       signal,
+      model,
       apiKey
     );
 
@@ -74,6 +77,7 @@ export type BatchComponentProps = {
   setBatchDataResults: Dispatch<
     SetStateAction<Array<[string, string] | undefined | null>>
   >;
+  model: string;
   apiKey: string;
 };
 
@@ -108,6 +112,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
   setOutput,
   batchDataResults,
   setBatchDataResults,
+  model,
   apiKey,
 }) => {
   const batches = new Array<string>();
@@ -145,6 +150,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
         previousBatch,
         currentBatch,
         signal,
+        model,
         apiKey
       );
 
@@ -169,7 +175,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
     return () => {
       controller.abort();
     };
-  }, [numBatches, phrases, initPrompt]);
+  }, [numBatches, phrases, initPrompt, model, apiKey]);
 
   const getBatchStatus = (index: number): boolean | null => {
     const result = batchDataResults[index];

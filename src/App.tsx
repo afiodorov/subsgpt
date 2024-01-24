@@ -42,8 +42,13 @@ function App() {
   );
   const [apiKeyShown, setApiKeyShown] = useState(false);
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
+  const [model, setModel] = useState(
+    localStorage.getItem("model") || "gpt-4-1106-preview"
+  );
 
+  const setModelAndStore = useLocalStorageSetter(setModel, "model", false);
   const setApiKeyAndStore = useLocalStorageSetter(setApiKey, "apiKey", false);
+
   const toggleApiKeyVisibility = () => {
     setApiKeyShown((apiKeyShown) => !apiKeyShown);
   };
@@ -192,6 +197,15 @@ function App() {
                     <>
                       <span className="heading">Settings</span>
                       <div className="setting">
+                        <input
+                          type={"text"}
+                          value={model}
+                          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                            setModelAndStore(event.target.value);
+                          }}
+                          placeholder="MODEL"
+                          className="model"
+                        />
                         <input
                           type={apiKeyShown ? "text" : "password"}
                           value={apiKey}
@@ -401,6 +415,7 @@ function App() {
           setOutput={setBatchOutputAndStore}
           batchDataResults={batchDataResults}
           setBatchDataResults={setBatchDataResultsAndStore}
+          model={model}
           apiKey={apiKey}
         />
       </div>

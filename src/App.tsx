@@ -149,6 +149,11 @@ function App() {
           <img src="./logo.webp" className="logo" alt="logo"></img>
         </div>
         <div className="title">Translate Subtitles</div>
+        <div className="contact">
+          <a href="https://domains.squarespace.com/whois-contact-form">
+            Contact
+          </a>
+        </div>
       </div>
       <div className="original">
         {batchShown === "" ? (

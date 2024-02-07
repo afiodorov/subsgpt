@@ -40,7 +40,8 @@ body {
       80px 575px minmax(min-content, max-content) 575px minmax(
         min-content,
         max-content
-      ) minmax(min-content, max-content)
+      )
+      minmax(min-content, max-content)
       10px 20px;
     grid-template-areas:
       ". h ."
@@ -96,6 +97,10 @@ body {
   margin-left: auto;
   margin-right: auto;
   font-size: 2em;
+  font-family: "Brush Script MT", cursive;
+}
+
+.header > .contact {
   font-family: "Brush Script MT", cursive;
 }
 

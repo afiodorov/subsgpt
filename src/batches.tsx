@@ -1,13 +1,9 @@
 import { useEffect, Dispatch, SetStateAction } from "react";
 import { fixCompletion, translateBatch } from "./ai";
 import { Phrase } from "./srtutils";
-import { batchSize } from "./translate";
+import { batchSize, formatBatch } from "./translate";
 import { convertToPhraseObject } from "./srtutils";
-import {
-  convertStringToExpectedObject,
-  ExpectedObject,
-  areKeysEqual,
-} from "./aiutils";
+import { validateBatch } from "./validate";
 
 const fetchData = async function (
   initPrompt: string,
@@ -29,16 +25,11 @@ const fetchData = async function (
     return [response.value.message, ""];
   }
 
-  const translations = response.value;
-  let parsed: ExpectedObject | null = null;
-  try {
-    parsed = convertStringToExpectedObject(translations);
-  } catch (err) {
-    console.log(err);
-  }
-
+  let translations = response.value;
   const correct = convertToPhraseObject(batch);
-  if (!parsed || !areKeysEqual(correct, parsed)) {
+
+  let errors = validateBatch(correct, translations);
+  if (errors.length > 0) {
     const fixedResponse = await fixCompletion(
       initPrompt,
       context,
@@ -46,23 +37,22 @@ const fetchData = async function (
       translations,
       signal,
       model,
-      apiKey
+      apiKey,
+      errors
     );
 
     if (fixedResponse.isLeft()) {
       return [fixedResponse.value.message, response.value];
     }
 
-    try {
-      parsed = convertStringToExpectedObject(fixedResponse.value);
-    } catch (err) {
-      return [(err as Error).message, fixedResponse.value];
-    }
+    translations = fixedResponse.value;
+    errors = validateBatch(correct, fixedResponse.value);
   }
-  if (!parsed || !areKeysEqual(correct, parsed)) {
-    return ["Number of subtitles don't match", JSON.stringify(parsed, null, 4)];
+
+  if (errors.length > 0) {
+    return [errors[0], translations];
   }
-  return ["", JSON.stringify(parsed, null, 4)];
+  return ["", formatBatch(translations) || translations];
 };
 
 export type BatchComponentProps = {

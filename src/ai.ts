@@ -55,7 +55,8 @@ export const fixCompletion = async function (
   wrongResponse: string,
   signal: AbortSignal,
   model: string,
-  apiKey: string
+  apiKey: string,
+  errors: Array<string>
 ): Promise<Either<Error, string>> {
   const openai = new OpenAI({
     apiKey: apiKey,
@@ -89,9 +90,7 @@ export const fixCompletion = async function (
   });
   msgs.push({
     role: "user",
-    content: `Great, but fix this error now: returned translation should have keys: ${JSON.stringify(
-      Object.keys(original)
-    )}`,
+    content: `Great, but fix these errors now ${JSON.stringify(errors)}`,
   });
   try {
     const chatCompletion = await openai.chat.completions.create({

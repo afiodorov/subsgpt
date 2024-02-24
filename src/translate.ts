@@ -1,11 +1,8 @@
 import { Dispatch, SetStateAction } from "react";
 import { parse, Phrase } from "./srtutils";
 import { convertToPhraseObject } from "./srtutils";
-import {
-  convertStringToExpectedObject,
-  areKeysEqual,
-  ExpectedObject,
-} from "./aiutils";
+import { validateBatch } from "./validate";
+import { convertStringToExpectedObject, ExpectedObject } from "./aiutils";
 
 export const batchSize = 20;
 
@@ -64,36 +61,35 @@ export function validateHandler(
       return prevResults;
     }
 
-    let parsed: ExpectedObject | null = null;
     const newResults = [...prevResults];
-    try {
-      parsed = convertStringToExpectedObject(prev[1]);
-    } catch (err) {
-      newResults[index] = [(err as Error).message, prev[1]];
-      setErr((err as Error).message);
-      return newResults;
-    }
 
-    if (!parsed || !areKeysEqual(correct, parsed)) {
-      const err = "Number of subtitles don't match";
+    const errors = validateBatch(correct, prev[1]);
+    if (errors.length > 0) {
+      const err = errors[0];
       newResults[index] = [err, prev[1]];
       setErr(err);
       return newResults;
-    }
-
-    for (const key in parsed) {
-      if (!parsed[key]) {
-        const err = `Subtitle at key ${key} is empty.`;
-        newResults[index] = [err, prev[1]];
-        setErr(err);
-        return newResults;
-      }
     }
 
     newResults[index] = ["", prev[1]];
     setErr("");
     return newResults;
   });
+}
+
+export function formatBatch(input: string): string {
+  let parsed: ExpectedObject | null = null;
+  try {
+    parsed = convertStringToExpectedObject(input);
+  } catch (err) {
+    return "";
+  }
+
+  if (!parsed) {
+    return "";
+  }
+
+  return JSON.stringify(parsed, null, 4);
 }
 
 export function formatHandler(
@@ -109,19 +105,13 @@ export function formatHandler(
       return prevResults;
     }
 
-    let parsed: ExpectedObject | null = null;
-    try {
-      parsed = convertStringToExpectedObject(prev[1]);
-    } catch (err) {
-      return prevResults;
-    }
-
-    if (!parsed) {
+    const value = formatBatch(prev[1]);
+    if (!value) {
+      console.log(`Format returned empty string.`);
       return prevResults;
     }
 
     const newResults = [...prevResults];
-    const value = JSON.stringify(parsed, null, 4);
     newResults[index] = [prev[0], value];
     setBatchOutput(value);
     return newResults;

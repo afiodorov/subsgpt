@@ -90,7 +90,9 @@ export const fixCompletion = async function (
   });
   msgs.push({
     role: "user",
-    content: `Great, but fix these errors now ${JSON.stringify(errors)}`,
+    content: `Great, but fix these errors now: ${JSON.stringify(
+      errors
+    )}. Fix them all.`,
   });
   try {
     const chatCompletion = await openai.chat.completions.create({

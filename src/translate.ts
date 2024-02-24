@@ -81,6 +81,15 @@ export function validateHandler(
       return newResults;
     }
 
+    for (const key in parsed) {
+      if (!parsed[key]) {
+        const err = `Subtitle at key ${key} is empty.`;
+        newResults[index] = [err, prev[1]];
+        setErr(err);
+        return newResults;
+      }
+    }
+
     newResults[index] = ["", prev[1]];
     setErr("");
     return newResults;

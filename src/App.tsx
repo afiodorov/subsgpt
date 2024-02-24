@@ -43,7 +43,7 @@ function App() {
   const [apiKeyShown, setApiKeyShown] = useState(false);
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
   const [model, setModel] = useState(
-    localStorage.getItem("model") || "gpt-4-1106-preview"
+    localStorage.getItem("model") || "gpt-4-0125-preview"
   );
 
   const setModelAndStore = useLocalStorageSetter(setModel, "model", false);

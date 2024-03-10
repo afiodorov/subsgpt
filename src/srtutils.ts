@@ -23,7 +23,7 @@ export function convertToPhraseObject(phrases: Phrase[]): {
 
 export function parse(text: string): Either<string, Phrase[]> {
   try {
-    const lines = text.trim().split("\n\n");
+    const lines = text.trim().replaceAll("\r", "").split("\n\n");
     const phrases: Phrase[] = [];
 
     for (let line of lines) {

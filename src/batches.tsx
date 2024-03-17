@@ -150,15 +150,14 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
         }
         const newResults = [...prevResults];
         newResults[index] = result;
+
         return newResults;
       });
     };
 
     for (let i = 0; i < numBatches; i++) {
       if (batchDataResults[i] === undefined) {
-        if (batchDataResults[i] === undefined) {
-          fetchDataForBatch(i);
-        }
+        fetchDataForBatch(i);
       }
     }
 

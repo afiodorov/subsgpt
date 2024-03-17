@@ -142,6 +142,13 @@ function App() {
     return batchDataResults.every((x) => x && x[0] === "");
   };
 
+  useEffect(() => {
+    if (translated) {
+      return;
+    }
+    makeResultHandler(isDone, phrases, batchDataResults, setTranslatedAndStore);
+  }, [batchDataResults]);
+
   return (
     <div className="App">
       <div className="header">
@@ -183,7 +190,7 @@ function App() {
             <Editor
               name="translated"
               text={translated}
-              setText={setTranslated}
+              setText={setTranslatedAndStore}
             />
           ) : (
             <>

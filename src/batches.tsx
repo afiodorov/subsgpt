@@ -1,5 +1,5 @@
 import { useEffect, Dispatch, SetStateAction } from "react";
-import { fixCompletion, translateBatch } from "./ai";
+import { translateBatch, fixCompletion, APIKeys } from "./ai-refactored";
 import { Phrase } from "./srtutils";
 import { batchSize, formatBatch } from "./translate";
 import { convertToPhraseObject } from "./srtutils";
@@ -11,48 +11,53 @@ const fetchData = async function (
   batch: Phrase[],
   signal: AbortSignal,
   model: string,
-  apiKey: string
+  apiKeys: APIKeys
 ): Promise<[string, string]> {
-  const response = await translateBatch(
-    initPrompt,
-    context,
-    batch,
-    signal,
-    model,
-    apiKey
-  );
-  if (response.isLeft()) {
-    return [response.value.message, ""];
-  }
-
-  let translations = response.value;
-  const correct = convertToPhraseObject(batch);
-
-  let errors = validateBatch(correct, translations);
-  if (errors.length > 0) {
-    const fixedResponse = await fixCompletion(
+  try {
+    const response = await translateBatch(
       initPrompt,
       context,
       batch,
-      translations,
       signal,
       model,
-      apiKey,
-      errors
+      apiKeys
     );
-
-    if (fixedResponse.isLeft()) {
-      return [fixedResponse.value.message, response.value];
+    
+    if (response.isLeft()) {
+      return [response.value.message, ""];
     }
 
-    translations = fixedResponse.value;
-    errors = validateBatch(correct, fixedResponse.value);
-  }
+    let translations = response.value;
+    const correct = convertToPhraseObject(batch);
 
-  if (errors.length > 0) {
-    return [errors[0], translations];
+    let errors = validateBatch(correct, translations);
+    if (errors.length > 0) {
+      const fixedResponse = await fixCompletion(
+        initPrompt,
+        context,
+        batch,
+        translations,
+        signal,
+        model,
+        apiKeys,
+        errors
+      );
+
+      if (fixedResponse.isLeft()) {
+        return [fixedResponse.value.message, response.value];
+      }
+
+      translations = fixedResponse.value;
+      errors = validateBatch(correct, fixedResponse.value);
+    }
+
+    if (errors.length > 0) {
+      return [errors[0], translations];
+    }
+    return ["", formatBatch(translations) || translations];
+  } catch (error) {
+    return [(error as Error).message, ""];
   }
-  return ["", formatBatch(translations) || translations];
 };
 
 export type BatchComponentProps = {
@@ -68,7 +73,7 @@ export type BatchComponentProps = {
     SetStateAction<Array<[string, string] | undefined | null>>
   >;
   model: string;
-  apiKey: string;
+  apiKeys: APIKeys;
 };
 
 const BatchItem: React.FC<{
@@ -103,7 +108,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
   batchDataResults,
   setBatchDataResults,
   model,
-  apiKey,
+  apiKeys,
 }) => {
   const batches = new Array<string>();
   for (let i = 0; i < numBatches; i++) {
@@ -121,6 +126,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
       if (batchDataResults[index] === null) {
         return;
       }
+      
       setBatchDataResults((prevResults) => {
         const newResults = [...prevResults];
         if (newResults[index] === undefined) {
@@ -135,24 +141,32 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
       const previousBatch =
         index > 0 ? phrases.slice(start - batchSize, start) : [];
 
-      const result = await fetchData(
-        initPrompt,
-        previousBatch,
-        currentBatch,
-        signal,
-        model,
-        apiKey
-      );
+      try {
+        const result = await fetchData(
+          initPrompt,
+          previousBatch,
+          currentBatch,
+          signal,
+          model,
+          apiKeys
+        );
 
-      setBatchDataResults((prevResults) => {
-        if (signal.aborted) {
-          return prevResults;
-        }
-        const newResults = [...prevResults];
-        newResults[index] = result;
-
-        return newResults;
-      });
+        setBatchDataResults((prevResults) => {
+          if (signal.aborted) {
+            return prevResults;
+          }
+          const newResults = [...prevResults];
+          newResults[index] = result;
+          return newResults;
+        });
+      } catch (error) {
+        console.error(`Error processing batch ${index}:`, error);
+        setBatchDataResults((prevResults) => {
+          const newResults = [...prevResults];
+          newResults[index] = [(error as Error).message, ""];
+          return newResults;
+        });
+      }
     };
 
     for (let i = 0; i < numBatches; i++) {
@@ -164,7 +178,7 @@ export const BatchComponent: React.FC<BatchComponentProps> = ({
     return () => {
       controller.abort();
     };
-  }, [numBatches, phrases, initPrompt, model, apiKey]);
+  }, [numBatches, phrases, initPrompt, model, apiKeys]);
 
   const getBatchStatus = (index: number): boolean | null => {
     const result = batchDataResults[index];

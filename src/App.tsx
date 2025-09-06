@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent, useMemo } from "react";
 import "./App.css";
 import { Editor } from "./editor";
 import { uploadAndStoreFile } from "./fileutils";
@@ -14,6 +14,8 @@ import {
 import { useLocalStorageSetter } from "./storage";
 import { BatchComponent } from "./batches";
 import { Phrase } from "./srtutils";
+import { ProviderFactory } from "./providers/factory";
+import { ProviderType, ModelInfo } from "./providers/types";
 
 function App() {
   const [original, setOriginal] = useState<string>(
@@ -41,58 +43,103 @@ function App() {
     localStorage.getItem("batchOutput") || ""
   );
   const [apiKeyShown, setApiKeyShown] = useState(false);
-  const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
+  const [activeProvider, setActiveProvider] = useState<ProviderType>('openai');
+  // Store API keys for each provider
+  const [openaiKey, setOpenaiKey] = useState(localStorage.getItem("openaiKey") || localStorage.getItem("apiKey") || "");
+  const [anthropicKey, setAnthropicKey] = useState(localStorage.getItem("anthropicKey") || "");
+  const [googleKey, setGoogleKey] = useState(localStorage.getItem("googleKey") || "");
+  
   const [model, setModel] = useState(
     localStorage.getItem("model") || "gpt-4-0125-preview"
   );
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
   const [modelsLoading, setModelsLoading] = useState(true);
+  
+  // Determine current provider from selected model
+  const currentProvider = ProviderFactory.getProviderFromModel(model);
+  
 
   const setModelAndStore = useLocalStorageSetter(setModel, "model", false);
-  const setApiKeyAndStore = useLocalStorageSetter(setApiKey, "apiKey", false);
+  const setOpenaiKeyAndStore = useLocalStorageSetter(setOpenaiKey, "openaiKey", false);
+  const setAnthropicKeyAndStore = useLocalStorageSetter(setAnthropicKey, "anthropicKey", false);
+  const setGoogleKeyAndStore = useLocalStorageSetter(setGoogleKey, "googleKey", false);
+  
+  // Update the appropriate API key based on current provider
+  const setApiKeyAndStore = (value: string) => {
+    switch (currentProvider) {
+      case 'openai': 
+        setOpenaiKeyAndStore(value);
+        break;
+      case 'anthropic': 
+        setAnthropicKeyAndStore(value);
+        break;
+      case 'google': 
+        setGoogleKeyAndStore(value);
+        break;
+    }
+  };
 
   useEffect(() => {
     const fetchModels = async () => {
-      if (!apiKey) {
-        setModelsLoading(false);
-        return;
+      setModelsLoading(true);
+      const allModels: ModelInfo[] = [];
+      
+      // Get static models for all providers
+      const staticModels = ProviderFactory.getAllModelInfo();
+      
+      // Always show all static models regardless of API keys
+      // This allows users to see what models are available for each provider
+      allModels.push(...staticModels);
+      
+      // If we have OpenAI key, also fetch dynamic models
+      if (openaiKey) {
+        try {
+          const response = await fetch('https://api.openai.com/v1/models', {
+            headers: {
+              'Authorization': `Bearer ${openaiKey}`
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            const dynamicModelIds = data.data
+              .map((m: any) => m.id)
+              .filter((id: string) => 
+                (id.includes('gpt') || id.includes('o1') || id.includes('chatgpt')) &&
+                !allModels.some(model => model.id === id)
+              );
+            
+            // Add dynamic models not in static list
+            dynamicModelIds.forEach((id: string) => {
+              allModels.push({
+                id,
+                provider: 'openai',
+                displayName: id
+              });
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch OpenAI models:', error);
+        }
       }
       
-      try {
-        const response = await fetch('https://api.openai.com/v1/models', {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          const modelIds = data.data
-            .map((m: any) => m.id)
-            .filter((id: string) => 
-              id.includes('gpt') || 
-              id.includes('o1') || 
-              id.includes('chatgpt')
-            )
-            .sort();
-          setAvailableModels(modelIds);
-        }
-      } catch (error) {
-        console.error('Failed to fetch models:', error);
-      } finally {
-        setModelsLoading(false);
-      }
+      setAvailableModels(allModels);
+      setModelsLoading(false);
     };
 
     fetchModels();
-  }, [apiKey]);
+  }, [openaiKey, anthropicKey, googleKey]);
 
   const toggleApiKeyVisibility = () => {
     setApiKeyShown((apiKeyShown) => !apiKeyShown);
   };
-  const handleApiKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setApiKeyAndStore(event.target.value);
-  };
+
+  // Memoize apiKeys to prevent unnecessary re-renders
+  const apiKeys = useMemo(() => ({
+    openai: openaiKey,
+    anthropic: anthropicKey,
+    google: googleKey
+  }), [openaiKey, anthropicKey, googleKey]);
 
   const setTranslatedAndStore = useLocalStorageSetter(
     setTranslated,
@@ -246,37 +293,138 @@ function App() {
                   {err === "" && (
                     <>
                       <span className="heading">Settings</span>
-                      <div className="setting">
-                        <select
-                          value={model}
-                          onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-                            setModelAndStore(event.target.value);
+                      
+                      {/* Provider Tabs */}
+                      <div className="provider-tabs">
+                        <div 
+                          className={`provider-tab ${activeProvider === 'openai' ? 'active' : ''} ${openaiKey ? 'has-key' : 'no-key'}`}
+                          onClick={() => {
+                            setActiveProvider('openai');
+                            // Auto-select first OpenAI model if current model is not OpenAI
+                            if (ProviderFactory.getProviderFromModel(model) !== 'openai') {
+                              const firstOpenAIModel = availableModels.find(m => m.provider === 'openai');
+                              if (firstOpenAIModel) {
+                                setModelAndStore(firstOpenAIModel.id);
+                              }
+                            }
                           }}
-                          className="model"
-                          disabled={modelsLoading || availableModels.length === 0}
                         >
-                          {modelsLoading ? (
-                            <option>Loading models...</option>
-                          ) : availableModels.length === 0 ? (
-                            <option>No models available</option>
-                          ) : (
-                            availableModels.map(modelId => (
-                              <option key={modelId} value={modelId}>
-                                {modelId}
-                              </option>
-                            ))
-                          )}
-                        </select>
-                        <input
-                          type={apiKeyShown ? "text" : "password"}
-                          value={apiKey}
-                          onChange={handleApiKeyChange}
-                          placeholder="OPENAI_API_KEY"
-                          className="pass"
-                        />
-                        <button onClick={toggleApiKeyVisibility}>
-                          {apiKeyShown ? "Hide" : "Show"}
-                        </button>
+                          OpenAI
+                          <span className="status">{openaiKey ? '✓' : '✗'}</span>
+                        </div>
+                        <div 
+                          className={`provider-tab ${activeProvider === 'anthropic' ? 'active' : ''} ${anthropicKey ? 'has-key' : 'no-key'}`}
+                          onClick={() => {
+                            setActiveProvider('anthropic');
+                            // Auto-select first Anthropic model if current model is not Anthropic
+                            if (ProviderFactory.getProviderFromModel(model) !== 'anthropic') {
+                              const firstAnthropicModel = availableModels.find(m => m.provider === 'anthropic');
+                              if (firstAnthropicModel) {
+                                setModelAndStore(firstAnthropicModel.id);
+                              }
+                            }
+                          }}
+                        >
+                          Anthropic
+                          <span className="status">{anthropicKey ? '✓' : '✗'}</span>
+                        </div>
+                        <div 
+                          className={`provider-tab ${activeProvider === 'google' ? 'active' : ''} ${googleKey ? 'has-key' : 'no-key'}`}
+                          onClick={() => {
+                            setActiveProvider('google');
+                            // Auto-select first Google model if current model is not Google
+                            if (ProviderFactory.getProviderFromModel(model) !== 'google') {
+                              const firstGoogleModel = availableModels.find(m => m.provider === 'google');
+                              if (firstGoogleModel) {
+                                setModelAndStore(firstGoogleModel.id);
+                              }
+                            }
+                          }}
+                        >
+                          Google
+                          <span className="status">{googleKey ? '✓' : '✗'}</span>
+                        </div>
+                      </div>
+
+                      {/* Provider-specific settings */}
+                      <div className="provider-settings">
+                        <div className="setting">
+                          <select
+                            value={model}
+                            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                              const newModel = event.target.value;
+                              setModelAndStore(newModel);
+                              // Auto-switch to the model's provider tab if needed
+                              const modelProvider = ProviderFactory.getProviderFromModel(newModel);
+                              if (modelProvider !== activeProvider) {
+                                setActiveProvider(modelProvider);
+                              }
+                            }}
+                            className="model"
+                            style={{ width: '250px' }}
+                          >
+                            {(() => {
+                              const providerModels = availableModels.filter(m => m.provider === activeProvider);
+                              if (modelsLoading) {
+                                return <option>Loading models...</option>;
+                              }
+                              if (providerModels.length === 0) {
+                                return <option>Add {activeProvider === 'openai' ? 'OpenAI' : activeProvider === 'anthropic' ? 'Anthropic' : 'Google'} API key</option>;
+                              }
+                              const hasApiKey = (
+                                (activeProvider === 'openai' && openaiKey) ||
+                                (activeProvider === 'anthropic' && anthropicKey) ||
+                                (activeProvider === 'google' && googleKey)
+                              );
+                              
+                              return providerModels.map(model => (
+                                <option key={model.id} value={model.id} disabled={!hasApiKey}>
+                                  {model.displayName}{!hasApiKey ? ' (Add API Key)' : ''}
+                                </option>
+                              ));
+                            })()}
+                          </select>
+                          
+                          <input
+                            type={apiKeyShown ? "text" : "password"}
+                            value={
+                              activeProvider === 'openai' ? openaiKey :
+                              activeProvider === 'anthropic' ? anthropicKey :
+                              googleKey
+                            }
+                            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                              const value = event.target.value;
+                              switch (activeProvider) {
+                                case 'openai':
+                                  setOpenaiKeyAndStore(value);
+                                  break;
+                                case 'anthropic':
+                                  setAnthropicKeyAndStore(value);
+                                  break;
+                                case 'google':
+                                  setGoogleKeyAndStore(value);
+                                  break;
+                              }
+                            }}
+                            placeholder={`${activeProvider === 'openai' ? 'OPENAI' : activeProvider === 'anthropic' ? 'ANTHROPIC' : 'GOOGLE'}_API_KEY`}
+                            className="pass"
+                            style={{
+                              borderColor: (
+                                (activeProvider === 'openai' && !openaiKey) ||
+                                (activeProvider === 'anthropic' && !anthropicKey) ||
+                                (activeProvider === 'google' && !googleKey)
+                              ) ? '#ff6b6b' : '#ccc',
+                              borderWidth: (
+                                (activeProvider === 'openai' && !openaiKey) ||
+                                (activeProvider === 'anthropic' && !anthropicKey) ||
+                                (activeProvider === 'google' && !googleKey)
+                              ) ? '2px' : '1px'
+                            }}
+                          />
+                          <button onClick={toggleApiKeyVisibility}>
+                            {apiKeyShown ? "Hide" : "Show"}
+                          </button>
+                        </div>
                       </div>
                     </>
                   )}
@@ -378,7 +526,6 @@ function App() {
               onClick={async () => {
                 setErrAndStore("");
                 setBatchErrAndStore("");
-                setInitPromptAndStore(translate);
                 setNumBatchesAndStore(0);
                 setBatchShownAndStore("");
                 setPhrasesAndStore([]);
@@ -477,7 +624,7 @@ function App() {
           batchDataResults={batchDataResults}
           setBatchDataResults={setBatchDataResultsAndStore}
           model={model}
-          apiKey={apiKey}
+          apiKeys={apiKeys}
         />
       </div>
       <div className="footer"></div>

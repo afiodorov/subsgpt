@@ -45,9 +45,47 @@ function App() {
   const [model, setModel] = useState(
     localStorage.getItem("model") || "gpt-4-0125-preview"
   );
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(true);
 
   const setModelAndStore = useLocalStorageSetter(setModel, "model", false);
   const setApiKeyAndStore = useLocalStorageSetter(setApiKey, "apiKey", false);
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      if (!apiKey) {
+        setModelsLoading(false);
+        return;
+      }
+      
+      try {
+        const response = await fetch('https://api.openai.com/v1/models', {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const modelIds = data.data
+            .map((m: any) => m.id)
+            .filter((id: string) => 
+              id.includes('gpt') || 
+              id.includes('o1') || 
+              id.includes('chatgpt')
+            )
+            .sort();
+          setAvailableModels(modelIds);
+        }
+      } catch (error) {
+        console.error('Failed to fetch models:', error);
+      } finally {
+        setModelsLoading(false);
+      }
+    };
+
+    fetchModels();
+  }, [apiKey]);
 
   const toggleApiKeyVisibility = () => {
     setApiKeyShown((apiKeyShown) => !apiKeyShown);
@@ -209,15 +247,26 @@ function App() {
                     <>
                       <span className="heading">Settings</span>
                       <div className="setting">
-                        <input
-                          type={"text"}
+                        <select
                           value={model}
-                          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                          onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                             setModelAndStore(event.target.value);
                           }}
-                          placeholder="MODEL"
                           className="model"
-                        />
+                          disabled={modelsLoading || availableModels.length === 0}
+                        >
+                          {modelsLoading ? (
+                            <option>Loading models...</option>
+                          ) : availableModels.length === 0 ? (
+                            <option>No models available</option>
+                          ) : (
+                            availableModels.map(modelId => (
+                              <option key={modelId} value={modelId}>
+                                {modelId}
+                              </option>
+                            ))
+                          )}
+                        </select>
                         <input
                           type={apiKeyShown ? "text" : "password"}
                           value={apiKey}

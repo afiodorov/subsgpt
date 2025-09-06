@@ -87,40 +87,78 @@ function App() {
       // Get static models for all providers
       const staticModels = ProviderFactory.getAllModelInfo();
       
-      // Always show all static models regardless of API keys
-      // This allows users to see what models are available for each provider
-      allModels.push(...staticModels);
+      // Track which providers have API keys and will get dynamic models
+      const providersWithKeys = new Set<ProviderType>();
+      const providerFetches = [];
       
-      // If we have OpenAI key, also fetch dynamic models
       if (openaiKey) {
-        try {
-          const response = await fetch('https://api.openai.com/v1/models', {
-            headers: {
-              'Authorization': `Bearer ${openaiKey}`
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            const dynamicModelIds = data.data
-              .map((m: any) => m.id)
-              .filter((id: string) => 
-                (id.includes('gpt') || id.includes('o1') || id.includes('chatgpt')) &&
-                !allModels.some(model => model.id === id)
-              );
-            
-            // Add dynamic models not in static list
-            dynamicModelIds.forEach((id: string) => {
+        providersWithKeys.add('openai');
+        providerFetches.push(
+          ProviderFactory.createProvider('openai', { apiKey: openaiKey })
+            .getAvailableModels()
+            .then(modelIds => ({ provider: 'openai' as ProviderType, models: modelIds }))
+            .catch(error => {
+              console.error('Failed to fetch OpenAI models:', error);
+              return { provider: 'openai' as ProviderType, models: [] };
+            })
+        );
+      }
+      
+      if (anthropicKey) {
+        providersWithKeys.add('anthropic');
+        providerFetches.push(
+          ProviderFactory.createProvider('anthropic', { apiKey: anthropicKey })
+            .getAvailableModels()
+            .then(modelIds => ({ provider: 'anthropic' as ProviderType, models: modelIds }))
+            .catch(error => {
+              console.error('Failed to fetch Anthropic models:', error);
+              return { provider: 'anthropic' as ProviderType, models: [] };
+            })
+        );
+      }
+      
+      if (googleKey) {
+        providersWithKeys.add('google');
+        providerFetches.push(
+          ProviderFactory.createProvider('google', { apiKey: googleKey })
+            .getAvailableModels()
+            .then(modelIds => ({ provider: 'google' as ProviderType, models: modelIds }))
+            .catch(error => {
+              console.error('Failed to fetch Google models:', error);
+              return { provider: 'google' as ProviderType, models: [] };
+            })
+        );
+      }
+      
+      // Add static models for providers WITHOUT API keys
+      staticModels.forEach(model => {
+        if (!providersWithKeys.has(model.provider)) {
+          allModels.push(model);
+        }
+      });
+      
+      // Wait for dynamic model fetches to complete
+      if (providerFetches.length > 0) {
+        const providerResults = await Promise.all(providerFetches);
+        
+        // Add dynamic models for providers WITH API keys
+        providerResults.forEach(({ provider, models }) => {
+          if (models.length > 0) {
+            models.forEach(modelId => {
+              const staticModel = staticModels.find(m => m.id === modelId);
               allModels.push({
-                id,
-                provider: 'openai',
-                displayName: id
+                id: modelId,
+                provider,
+                displayName: staticModel?.displayName || modelId
               });
             });
+          } else {
+            // If dynamic fetch failed, add static models as fallback
+            staticModels
+              .filter(m => m.provider === provider)
+              .forEach(model => allModels.push(model));
           }
-        } catch (error) {
-          console.error('Failed to fetch OpenAI models:', error);
-        }
+        });
       }
       
       setAvailableModels(allModels);

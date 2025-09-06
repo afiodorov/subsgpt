@@ -6,8 +6,10 @@ import { Either, Right, Left } from "../either";
 export class GoogleProvider implements AIProvider {
   name = "Google Gemini";
   private genAI: GoogleGenerativeAI;
+  private apiKey: string;
 
   constructor(config: ProviderConfig) {
+    this.apiKey = config.apiKey;
     this.genAI = new GoogleGenerativeAI(config.apiKey);
   }
 
@@ -101,11 +103,31 @@ export class GoogleProvider implements AIProvider {
   }
 
   async getAvailableModels(): Promise<string[]> {
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.models
+          .filter((model: any) => 
+            model.supportedGenerationMethods?.includes('generateContent') &&
+            model.name.includes('gemini')
+          )
+          .map((model: any) => model.name.split('/')[1]) // Extract model ID from "models/gemini-xxx"
+          .sort();
+      }
+    } catch (error) {
+      console.error('Failed to fetch Google models (likely CORS):', error);
+      // Google API might not support CORS either, fallback to static
+    }
+    
+    // Fallback to static models if API fails or CORS blocked
     return [
       "gemini-1.5-flash",
-      "gemini-1.5-flash-8b",
+      "gemini-1.5-flash-8b", 
       "gemini-1.5-pro",
-      "gemini-1.0-pro"
+      "gemini-1.0-pro",
+      "gemini-2.0-flash-exp"
     ];
   }
 

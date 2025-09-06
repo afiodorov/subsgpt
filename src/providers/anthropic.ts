@@ -6,8 +6,10 @@ import { Either, Right, Left } from "../either";
 export class AnthropicProvider implements AIProvider {
   name = "Anthropic";
   private anthropic: Anthropic;
+  private apiKey: string;
 
   constructor(config: ProviderConfig) {
+    this.apiKey = config.apiKey;
     this.anthropic = new Anthropic({
       apiKey: config.apiKey,
       dangerouslyAllowBrowser: true,
@@ -115,10 +117,31 @@ export class AnthropicProvider implements AIProvider {
   }
 
   async getAvailableModels(): Promise<string[]> {
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/models', {
+        headers: {
+          'x-api-key': this.apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.data
+          .map((model: any) => model.id)
+          .filter((id: string) => id.includes('claude'))
+          .sort();
+      }
+    } catch (error) {
+      console.error('Failed to fetch Anthropic models:', error);
+    }
+    
+    // Fallback to static models if API fails
     return [
       "claude-3-5-sonnet-20241022",
       "claude-3-5-haiku-20241022",
-      "claude-3-opus-20240229",
+      "claude-3-opus-20240229", 
       "claude-3-sonnet-20240229",
       "claude-3-haiku-20240307"
     ];
